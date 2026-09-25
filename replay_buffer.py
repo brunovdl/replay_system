@@ -174,7 +174,7 @@ class ReplayBuffer:
                 "-err_detect", "ignore_err",
                 "-i", webm_path,
                 "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100",
-                "-vf", "setpts=PTS-STARTPTS,scale='min(1280,iw)':-2:force_original_aspect_ratio=decrease,pad=ceil(iw/2)*2:ceil(ih/2)*2",
+                "-vf", "setpts=PTS-STARTPTS,setsar=1,scale='min(1280,iw)':-2:force_original_aspect_ratio=decrease,pad=ceil(iw/2)*2:ceil(ih/2)*2",
                 "-t", f"{target_duration:.2f}",
                 "-c:v", "libx264",
                 "-profile:v", "main",
