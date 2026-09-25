@@ -75,14 +75,20 @@ def start_tunnel(port: int = 8000, wait_for_url: bool = True, timeout: int = 15)
             # Já está rodando
             return _tunnel_url
 
+        if os.getenv("DISABLE_TUNNEL", "false").lower() in ("true", "1") or os.getenv("ENVIRONMENT") == "production":
+            logger.info("Túnel desativado para ambiente de produção.")
+            return None
+
         cloudflared_bin = _find_cloudflared()
         if cloudflared_bin:
             cmd = [cloudflared_bin, "tunnel", "--url", f"http://127.0.0.1:{port}"]
             logger.info(f"Iniciando túnel Cloudflare via {cloudflared_bin}...")
-        else:
-            # Fallback para localtunnel via npx
+        elif shutil.which("npx"):
             cmd = ["npx", "--yes", "localtunnel", "--port", str(port)]
-            logger.info("cloudflared não encontrado. Iniciando fallback via localtunnel...")
+            logger.info("Iniciando fallback via localtunnel...")
+        else:
+            logger.info("Nenhum binário de túnel local encontrado (típico em Docker/produção no Easypanel).")
+            return None
 
         try:
             # CREATE_NO_WINDOW no Windows evita abrir janelas indesejadas
@@ -144,10 +150,11 @@ def get_tunnel_info() -> Dict[str, Any]:
     """Retorna o status atual do túnel e IPs de acesso"""
     local_ip = get_local_ip()
     is_running = _tunnel_process is not None and _tunnel_process.poll() is None
+    public_url = os.getenv("PUBLIC_URL") or _tunnel_url
 
     return {
-        "running": is_running,
-        "url": _tunnel_url,
+        "running": is_running or bool(public_url),
+        "url": public_url,
         "local_ip": local_ip,
         "local_url": f"http://{local_ip}:8000",
         "localhost_url": "http://localhost:8000"
