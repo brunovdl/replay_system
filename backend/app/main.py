@@ -95,7 +95,17 @@ async def process_and_dispatch_replay(
 
 @app.on_event("startup")
 async def on_startup():
-    """Inicia o túnel Cloudflare automaticamente em background para celulares"""
+    """Inicia o túnel Cloudflare apenas em ambiente de desenvolvimento local"""
+    is_in_container = (
+        os.path.exists("/.dockerenv")
+        or bool(os.getenv("EASYPANEL_SERVICE_NAME"))
+        or os.getenv("DISABLE_TUNNEL", "false").lower() in ("true", "1")
+        or os.getenv("ENVIRONMENT") == "production"
+    )
+    if is_in_container:
+        logger.info("Executando em produção (Easypanel). Túnel local desativado.")
+        return
+
     def _bg_start():
         logger.info("Iniciando túnel HTTPS Cloudflare para conexões mobile...")
         start_tunnel(port=8000, wait_for_url=True, timeout=12)

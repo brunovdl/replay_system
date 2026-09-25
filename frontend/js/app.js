@@ -552,9 +552,10 @@ function setupEventListeners() {
 
   if (btnCopyQrLink) {
     btnCopyQrLink.addEventListener("click", () => {
-      if (currentTunnelUrl) {
-        navigator.clipboard.writeText(currentTunnelUrl).catch(() => {});
-        showToast("Link HTTPS copiado para a área de transferência!", 3000);
+      const targetUrl = window.location.protocol === "https:" ? window.location.origin : currentTunnelUrl;
+      if (targetUrl) {
+        navigator.clipboard.writeText(targetUrl).catch(() => {});
+        showToast("Link copiado para a área de transferência!", 3000);
       } else {
         showToast("Aguarde o link ser gerado...", 2500);
       }
@@ -563,6 +564,11 @@ function setupEventListeners() {
 
   if (btnRefreshTunnel) {
     btnRefreshTunnel.addEventListener("click", async () => {
+      if (window.location.protocol === "https:") {
+        updateQrUI(window.location.origin);
+        showToast("Conexão direta HTTPS ativa!", 2500);
+        return;
+      }
       btnRefreshTunnel.textContent = "🔄 Gerando...";
       showToast("Reativando túnel HTTPS Cloudflare...", 3000);
       await fetchTunnelInfo(true);
@@ -588,6 +594,13 @@ function setupEventListeners() {
 }
 
 async function fetchTunnelInfo(forceStart = false) {
+  // Em produção HTTPS (Easypanel), a URL já é o próprio domínio
+  if (window.location.protocol === "https:") {
+    currentTunnelUrl = window.location.origin;
+    updateQrUI(currentTunnelUrl);
+    return currentTunnelUrl;
+  }
+
   try {
     const endpoint = forceStart ? "/api/tunnel-start" : "/api/tunnel-info";
     const method = forceStart ? "POST" : "GET";
@@ -620,13 +633,21 @@ function updateQrUI(url) {
 }
 
 function openQrModal() {
-  if (modalQr) {
-    modalQr.style.display = "flex";
-    if (!currentTunnelUrl) {
-      pollTunnelUrl();
-    } else {
-      updateQrUI(currentTunnelUrl);
-    }
+  if (!modalQr) return;
+  modalQr.style.display = "flex";
+
+  // Se já estivermos em HTTPS (ex: Easypanel), usa a própria URL de produção diretamente!
+  if (window.location.protocol === "https:") {
+    updateQrUI(window.location.origin);
+    if (btnRefreshTunnel) btnRefreshTunnel.style.display = "none";
+    return;
+  }
+
+  // Ambiente de desenvolvimento local: busca o túnel Cloudflare
+  if (!currentTunnelUrl) {
+    pollTunnelUrl();
+  } else {
+    updateQrUI(currentTunnelUrl);
   }
 }
 
