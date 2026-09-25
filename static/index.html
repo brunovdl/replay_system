@@ -3,32 +3,40 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#0a0a0f" />
+  <meta name="theme-color" content="#030712" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <title>Replay Mobile</title>
+  <title>MARTINS AI — Replay System</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    /* ── Reset & Base ─────────────────────────────────────────────── */
+    /* ── MARTINS AI Design Tokens ──────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg:         #0a0a0f;
-      --bg2:        #12121a;
-      --bg3:        #1a1a26;
-      --surface:    #1e1e2e;
-      --border:     rgba(255,255,255,0.08);
-      --accent:     #e63946;
-      --accent-glow:rgba(230,57,70,0.35);
-      --accent2:    #7c4dff;
-      --green:      #06d6a0;
-      --yellow:     #ffd166;
-      --text:       #f0f0f8;
-      --text-muted: rgba(240,240,248,0.45);
-      --radius:     16px;
-      --font:       'Inter', system-ui, sans-serif;
+      --bg:             #030712;
+      --bg-surface:     #0b1528;
+      --bg-surface-2:   #112240;
+      --border:         rgba(0, 168, 232, 0.2);
+      --border-bright:  #00a8e8;
+      
+      --cyan-neon:      #00a8e8;
+      --cyan-glow:      rgba(0, 168, 232, 0.45);
+      --cyan-subtle:    rgba(0, 168, 232, 0.12);
+      
+      --silver-metal:   #e0e1dd;
+      --silver-muted:   #94a3b8;
+      --navy-dark:      #0a192f;
+      
+      --accent-red:     #ff3b30;
+      --accent-red-glow:rgba(255, 59, 48, 0.4);
+      --green-ready:    #00f5d4;
+      
+      --text:           #ffffff;
+      --text-muted:     #94a3b8;
+      --font:           'Outfit', 'Inter', system-ui, sans-serif;
     }
+
     html, body {
       height: 100%; width: 100%;
       background: var(--bg);
@@ -40,285 +48,365 @@
       user-select: none;
     }
 
-    /* ── Layout ───────────────────────────────────────────────────── */
     #app {
       display: flex; flex-direction: column;
       height: 100dvh; width: 100%;
       position: relative; overflow: hidden;
+      background: radial-gradient(circle at 50% 0%, #0b1d3a 0%, #030712 75%);
     }
 
-    /* ── Status Bar ──────────────────────────────────────────────── */
+    /* ── App Header (MARTINS AI Brand) ────────────────────────────── */
+    #app-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 18px;
+      background: rgba(3, 7, 18, 0.9);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      z-index: 20;
+    }
+    .brand-group {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .brand-logo-svg {
+      width: 28px; height: 28px; flex-shrink: 0;
+    }
+    .brand-text-wrap {
+      display: flex; flex-direction: column; line-height: 1.1;
+    }
+    .brand-title {
+      font-size: 16px; font-weight: 800; letter-spacing: 1px;
+      background: linear-gradient(90deg, #ffffff 40%, var(--cyan-neon) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .brand-subtitle {
+      font-size: 9px; font-weight: 600; letter-spacing: 1.5px;
+      color: var(--silver-muted); text-transform: uppercase;
+    }
+
+    /* ── Mode Toggle Button ────────────────────────────────────────── */
+    #btn-mode-toggle {
+      background: var(--cyan-subtle);
+      border: 1px solid var(--border);
+      color: var(--cyan-neon);
+      padding: 6px 14px; border-radius: 99px;
+      font-family: var(--font);
+      font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+      display: flex; align-items: center; gap: 6px;
+      cursor: pointer; transition: all 0.2s;
+    }
+    #btn-mode-toggle:active {
+      transform: scale(0.95);
+      background: rgba(0, 168, 232, 0.25);
+    }
+    #btn-mode-toggle svg { width: 14px; height: 14px; stroke: currentColor; }
+
+    /* ── Status Bar ────────────────────────────────────────────────── */
     #status-bar {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 16px 6px;
-      background: linear-gradient(180deg, rgba(10,10,15,0.95) 0%, transparent 100%);
-      position: absolute; top: 0; left: 0; right: 0; z-index: 10;
+      padding: 8px 18px;
+      background: rgba(11, 21, 40, 0.6);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      z-index: 15;
     }
+    .status-left { display: flex; align-items: center; gap: 8px; }
     #rec-dot {
-      width: 10px; height: 10px; border-radius: 50%;
-      background: var(--accent); margin-right: 6px;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent-red);
+      box-shadow: 0 0 10px var(--accent-red-glow);
       animation: pulse-dot 1.2s ease-in-out infinite;
     }
-    #rec-dot.inactive { background: var(--text-muted); animation: none; }
+    #rec-dot.inactive { background: var(--silver-muted); box-shadow: none; animation: none; }
     @keyframes pulse-dot {
-      0%,100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.7); }
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.3; transform: scale(0.8); }
     }
-    .status-left { display: flex; align-items: center; gap: 6px; }
-    #rec-label { font-size: 12px; font-weight: 600; letter-spacing: 1.5px; color: var(--accent); }
-    #rec-label.inactive { color: var(--text-muted); }
-    #buffer-text { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    #rec-label { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: var(--accent-red); }
+    #rec-label.inactive { color: var(--silver-muted); }
+    #buffer-text {
+      font-size: 11px; font-weight: 600; color: var(--silver-metal);
+      font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 5px;
+    }
     #save-count-badge {
-      background: var(--accent2); color: white;
-      font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 99px;
-      display: none;
+      background: var(--cyan-subtle); border: 1px solid var(--border);
+      color: var(--cyan-neon); font-size: 10px; font-weight: 700;
+      padding: 2px 8px; border-radius: 99px; display: none;
     }
     #save-count-badge.visible { display: block; }
 
-    /* ── Buffer Progress Bar ─────────────────────────────────────── */
-    #buffer-bar-wrap {
-      position: absolute; top: 38px; left: 0; right: 0; height: 3px; z-index: 10;
-    }
+    /* ── Progress Bar ──────────────────────────────────────────────── */
+    #buffer-bar-wrap { width: 100%; height: 3px; background: rgba(255, 255, 255, 0.05); }
     #buffer-bar {
       height: 100%; width: 0%;
-      background: linear-gradient(90deg, #e63946, #ffd166, #06d6a0);
-      transition: width 0.5s ease;
-      border-radius: 0 2px 2px 0;
+      background: linear-gradient(90deg, #0077b6, var(--cyan-neon), var(--green-ready));
+      box-shadow: 0 0 8px var(--cyan-glow);
+      transition: width 0.4s ease;
     }
 
-    /* ── Camera Preview ──────────────────────────────────────────── */
+    /* ── Camera Viewport (Fix sem esticar / Aspect Ratio Preservado) ─ */
     #cam-container {
       flex: 1; position: relative; overflow: hidden;
       background: #000;
+      display: flex; align-items: center; justify-content: center;
     }
     #cam-video {
       width: 100%; height: 100%;
-      object-fit: cover;
-      transform: scaleX(-1); /* espelho para câmera frontal */
+      object-fit: contain; /* NUNCA ESTICA O VÍDEO DA CÂMERA */
+      transform: scaleX(-1);
     }
-    #cam-video.env-cam { transform: scaleX(1); } /* câmera traseira: sem espelho */
+    #cam-video.env-cam { transform: scaleX(1); }
     #cam-mjpeg {
       width: 100%; height: 100%;
-      object-fit: cover; display: none;
+      object-fit: contain; display: none;
     }
     #cam-placeholder {
       position: absolute; inset: 0;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      gap: 12px; color: var(--text-muted);
+      padding: 24px; text-align: center;
+      background: radial-gradient(circle at 50% 50%, #0b1528 0%, #030712 100%);
     }
-    #cam-placeholder svg { opacity: 0.25; }
-    #cam-placeholder p { font-size: 14px; }
+    #cam-placeholder-icon {
+      width: 64px; height: 64px; color: var(--cyan-neon);
+      margin-bottom: 16px; opacity: 0.8;
+      filter: drop-shadow(0 0 12px var(--cyan-glow));
+    }
 
-    /* Overlay info no canto inferior do vídeo */
+    /* ── Cam Overlay Bottom ────────────────────────────────────────── */
     #cam-overlay {
       position: absolute; bottom: 0; left: 0; right: 0;
-      background: linear-gradient(0deg, rgba(0,0,0,0.75) 0%, transparent 100%);
-      padding: 20px 16px 8px;
+      background: linear-gradient(0deg, rgba(3,7,18,0.9) 0%, transparent 100%);
+      padding: 24px 20px 12px;
       display: flex; align-items: center; justify-content: space-between;
+      pointer-events: none;
     }
     #gesture-badge {
-      background: rgba(6,214,160,0.15);
-      border: 1px solid rgba(6,214,160,0.3);
-      color: var(--green);
-      font-size: 11px; font-weight: 600;
-      padding: 4px 10px; border-radius: 99px;
-      display: none;
+      background: rgba(0, 245, 212, 0.12); border: 1px solid rgba(0, 245, 212, 0.3);
+      color: var(--green-ready); font-size: 11px; font-weight: 700;
+      padding: 5px 12px; border-radius: 99px; display: none;
     }
-    #gesture-badge.visible { display: block; }
+    #gesture-badge.visible { display: flex; align-items: center; gap: 6px; }
     #saving-indicator {
-      display: flex; align-items: center; gap: 6px;
+      display: flex; align-items: center; gap: 8px;
       opacity: 0; transition: opacity 0.3s;
     }
     #saving-indicator.visible { opacity: 1; }
     #saving-dot {
       width: 8px; height: 8px; border-radius: 50%;
-      background: var(--accent);
-      animation: pulse-dot 0.6s ease-in-out infinite;
+      background: var(--accent-red); animation: pulse-dot 0.6s ease-in-out infinite;
     }
-    #saving-label { font-size: 12px; font-weight: 600; color: var(--accent); }
+    #saving-label { font-size: 12px; font-weight: 700; color: var(--accent-red); letter-spacing: 1px; }
 
-    /* ── Replay Button ───────────────────────────────────────────── */
+    /* ── Controls Bottom Dock ─────────────────────────────────────── */
     #controls {
-      padding: 16px 24px 20px;
-      background: var(--bg2);
+      padding: 18px 24px 24px;
+      background: rgba(11, 21, 40, 0.95);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       display: flex; align-items: center; justify-content: center;
-      gap: 24px;
-      border-top: 1px solid var(--border);
+      gap: 28px; border-top: 1px solid var(--border);
+      z-index: 20;
     }
-    #btn-cam-switch {
-      width: 48px; height: 48px; border-radius: 50%;
-      background: var(--surface); border: 1px solid var(--border);
+    .btn-dock-side {
+      width: 50px; height: 50px; border-radius: 50%;
+      background: var(--bg-surface-2); border: 1px solid var(--border);
+      color: var(--silver-metal);
       display: flex; align-items: center; justify-content: center;
-      cursor: pointer; transition: all 0.2s;
+      cursor: pointer; transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
       flex-shrink: 0;
     }
-    #btn-cam-switch:active { transform: scale(0.9); background: var(--bg3); }
+    .btn-dock-side:active { transform: scale(0.9); background: var(--cyan-subtle); border-color: var(--cyan-neon); }
+    .btn-dock-side svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+    /* ── Main REPLAY Button (Martins Cyan Glow) ────────────────────── */
     #btn-replay {
-      width: 88px; height: 88px; border-radius: 50%;
-      background: radial-gradient(circle at 35% 35%, #ff6b7a, #e63946 60%, #b52232);
-      border: 3px solid rgba(230,57,70,0.4);
-      box-shadow: 0 0 0 0 var(--accent-glow), 0 8px 32px rgba(230,57,70,0.4);
+      width: 92px; height: 92px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #00c6ff, var(--cyan-neon) 60%, #0077b6);
+      border: 3px solid rgba(255, 255, 255, 0.8);
+      box-shadow: 0 0 24px var(--cyan-glow), 0 8px 32px rgba(0,0,0,0.5);
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      cursor: pointer;
-      transition: transform 0.15s, box-shadow 0.15s;
-      position: relative; outline: none;
-      flex-shrink: 0;
+      cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
     }
-    #btn-replay:active { transform: scale(0.9); box-shadow: 0 0 0 0 transparent; }
+    #btn-replay:active {
+      transform: scale(0.92);
+      box-shadow: 0 0 36px var(--cyan-glow);
+    }
     #btn-replay.saving {
       animation: replay-pulse 0.8s ease-in-out infinite alternate;
       pointer-events: none;
+      background: radial-gradient(circle at 35% 35%, #ff6b7a, var(--accent-red) 60%, #b52232);
+      border-color: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 0 30px var(--accent-red-glow);
     }
-    #btn-replay.buffering {
-      opacity: 0.5; pointer-events: none;
-    }
+    #btn-replay.buffering { opacity: 0.5; pointer-events: none; }
     @keyframes replay-pulse {
-      from { box-shadow: 0 0 0 0 var(--accent-glow), 0 4px 16px rgba(230,57,70,0.3); }
-      to   { box-shadow: 0 0 0 18px rgba(230,57,70,0), 0 4px 16px rgba(230,57,70,0.3); }
+      from { box-shadow: 0 0 0 0 var(--accent-red-glow), 0 4px 16px rgba(255,59,48,0.4); }
+      to   { box-shadow: 0 0 0 20px rgba(255,59,48,0), 0 4px 16px rgba(255,59,48,0.4); }
     }
-    #btn-replay svg { pointer-events: none; }
+    #btn-replay svg { width: 30px; height: 30px; fill: white; pointer-events: none; }
     #btn-replay-label {
-      font-size: 9px; font-weight: 800; letter-spacing: 1.5px;
-      color: rgba(255,255,255,0.85); margin-top: 3px; pointer-events: none;
+      font-size: 10px; font-weight: 900; letter-spacing: 1.5px;
+      color: #ffffff; margin-top: 2px; pointer-events: none;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.5);
     }
-    #btn-settings {
-      width: 48px; height: 48px; border-radius: 50%;
-      background: var(--surface); border: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; transition: all 0.2s;
-      flex-shrink: 0;
-    }
-    #btn-settings:active { transform: scale(0.9); background: var(--bg3); }
 
     /* ── Settings Panel ──────────────────────────────────────────── */
     #settings-overlay {
       position: absolute; inset: 0; z-index: 50;
-      background: rgba(0,0,0,0.7);
+      background: rgba(3, 7, 18, 0.8);
+      backdrop-filter: blur(8px);
       display: flex; align-items: flex-end;
-      opacity: 0; pointer-events: none;
-      transition: opacity 0.3s;
+      opacity: 0; pointer-events: none; transition: opacity 0.3s;
     }
     #settings-overlay.open { opacity: 1; pointer-events: all; }
     #settings-panel {
-      width: 100%; background: var(--bg2);
-      border-radius: 24px 24px 0 0;
-      padding: 0 0 32px;
+      width: 100%; background: var(--bg-surface);
+      border-top: 1px solid var(--border);
+      border-radius: 28px 28px 0 0; padding: 0 0 32px;
       max-height: 85dvh; overflow-y: auto;
       transform: translateY(100%);
       transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     #settings-overlay.open #settings-panel { transform: translateY(0); }
     .panel-handle {
-      width: 36px; height: 4px; border-radius: 2px;
+      width: 40px; height: 4px; border-radius: 2px;
       background: var(--border); margin: 12px auto 16px;
     }
     .panel-title {
-      font-size: 18px; font-weight: 700;
-      padding: 0 20px 16px;
-      border-bottom: 1px solid var(--border);
+      font-size: 18px; font-weight: 800; padding: 0 24px 16px;
+      border-bottom: 1px solid var(--border); color: var(--silver-metal);
+      display: flex; align-items: center; justify-content: space-between;
     }
-    .setting-group { padding: 16px 20px 0; }
+    .setting-group { padding: 18px 24px 0; }
     .setting-label {
-      font-size: 11px; font-weight: 600; letter-spacing: 1px;
-      color: var(--text-muted); text-transform: uppercase;
-      margin-bottom: 10px;
+      font-size: 11px; font-weight: 700; letter-spacing: 1px;
+      color: var(--cyan-neon); text-transform: uppercase; margin-bottom: 10px;
     }
     .setting-row {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 14px;
-      background: var(--surface); border-radius: 12px;
-      margin-bottom: 8px;
+      padding: 14px 16px; background: var(--bg-surface-2);
+      border: 1px solid var(--border); border-radius: 14px; margin-bottom: 10px;
     }
-    .setting-row-label { font-size: 14px; font-weight: 500; }
+    .setting-row-label { font-size: 14px; font-weight: 600; color: var(--text); }
     .setting-row-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-    input[type="text"], input[type="url"], input[type="number"] {
-      background: var(--bg3); border: 1px solid var(--border);
-      color: var(--text); font-family: var(--font);
-      font-size: 13px; padding: 10px 12px;
-      border-radius: 10px; width: 100%;
-      margin-top: 8px; outline: none;
-      transition: border-color 0.2s;
-      -webkit-user-select: text; user-select: text;
+
+    input[type="text"], input[type="url"] {
+      background: var(--bg); border: 1px solid var(--border);
+      color: var(--text); font-family: var(--font); font-size: 13px;
+      padding: 12px 14px; border-radius: 12px; width: 100%;
+      margin-top: 8px; outline: none; transition: border-color 0.2s;
     }
-    input:focus { border-color: var(--accent2); }
-    /* Toggle switch */
-    .toggle-switch {
-      position: relative; width: 46px; height: 26px;
-      flex-shrink: 0;
-    }
+    input:focus { border-color: var(--cyan-neon); box-shadow: 0 0 10px var(--cyan-subtle); }
+
+    /* Toggle Switch */
+    .toggle-switch { position: relative; width: 48px; height: 28px; flex-shrink: 0; }
     .toggle-switch input { opacity: 0; width: 0; height: 0; }
     .toggle-knob {
-      position: absolute; inset: 0;
-      background: var(--bg3); border-radius: 99px;
-      transition: background 0.25s;
-      cursor: pointer;
+      position: absolute; inset: 0; background: var(--bg);
+      border: 1px solid var(--border); border-radius: 99px;
+      transition: background 0.25s, border-color 0.25s; cursor: pointer;
     }
     .toggle-knob::before {
-      content: ""; position: absolute;
-      width: 20px; height: 20px; border-radius: 50%;
-      background: white; top: 3px; left: 3px;
-      transition: transform 0.25s;
+      content: ""; position: absolute; width: 20px; height: 20px;
+      border-radius: 50%; background: var(--silver-muted);
+      top: 3px; left: 3px; transition: transform 0.25s, background 0.25s;
     }
-    .toggle-switch input:checked + .toggle-knob { background: var(--accent2); }
-    .toggle-switch input:checked + .toggle-knob::before { transform: translateX(20px); }
-    /* Chips */
-    .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .toggle-switch input:checked + .toggle-knob {
+      background: var(--cyan-subtle); border-color: var(--cyan-neon);
+    }
+    .toggle-switch input:checked + .toggle-knob::before {
+      transform: translateX(20px); background: var(--cyan-neon);
+      box-shadow: 0 0 8px var(--cyan-glow);
+    }
+
+    /* Duration Chips */
+    .chip-group { display: flex; gap: 10px; margin-top: 6px; }
     .chip {
-      padding: 8px 16px; border-radius: 99px;
-      font-size: 13px; font-weight: 600;
-      background: var(--bg3); border: 1px solid var(--border);
-      cursor: pointer; transition: all 0.2s;
-      color: var(--text-muted);
+      flex: 1; padding: 12px 8px; text-align: center;
+      background: var(--bg-surface-2); border: 1px solid var(--border);
+      border-radius: 12px; font-size: 13px; font-weight: 700;
+      color: var(--silver-muted); cursor: pointer; transition: all 0.2s;
     }
     .chip.active {
-      background: var(--accent2); border-color: var(--accent2);
-      color: white;
+      background: var(--cyan-subtle); border-color: var(--cyan-neon);
+      color: var(--cyan-neon); box-shadow: 0 0 12px var(--cyan-subtle);
     }
+
     /* Save button */
     #btn-save-settings {
-      margin: 20px 20px 0;
-      width: calc(100% - 40px);
-      padding: 14px; border-radius: 14px;
-      background: var(--accent2); color: white;
-      font-family: var(--font); font-size: 15px; font-weight: 700;
-      border: none; cursor: pointer;
-      transition: transform 0.15s, opacity 0.15s;
+      width: calc(100% - 48px); margin: 24px 24px 0; padding: 14px;
+      background: linear-gradient(90deg, #0077b6, var(--cyan-neon));
+      border: none; border-radius: 14px; color: white;
+      font-family: var(--font); font-size: 15px; font-weight: 800;
+      letter-spacing: 0.5px; cursor: pointer; transition: transform 0.15s;
+      box-shadow: 0 4px 16px var(--cyan-glow);
     }
-    #btn-save-settings:active { transform: scale(0.97); opacity: 0.85; }
+    #btn-save-settings:active { transform: scale(0.97); }
 
-    /* ── Toast ───────────────────────────────────────────────────── */
-    #toast {
-      position: absolute; bottom: 110px; left: 50%; transform: translateX(-50%);
-      background: var(--surface); border: 1px solid var(--border);
-      color: var(--text); font-size: 13px; font-weight: 500;
-      padding: 10px 20px; border-radius: 99px;
-      white-space: nowrap; z-index: 100;
-      opacity: 0; transition: opacity 0.3s, bottom 0.3s;
-      pointer-events: none;
-    }
-    #toast.show { opacity: 1; bottom: 120px; }
-
-    /* ── Scroll ─────────────────────────────────────────────────── */
-    #settings-panel::-webkit-scrollbar { width: 4px; }
-    #settings-panel::-webkit-scrollbar-track { background: transparent; }
-    #settings-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-    /* Replays list */
+    /* Replays List */
+    #replays-list { max-height: 180px; overflow-y: auto; margin-top: 8px; }
     .replay-item {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 10px 14px; background: var(--bg3);
-      border-radius: 10px; margin-bottom: 6px;
-      font-size: 12px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 10px; margin-bottom: 6px; font-size: 12px;
     }
-    .replay-name { font-weight: 500; word-break: break-all; }
-    .replay-meta { color: var(--text-muted); font-size: 11px; margin-top: 2px; }
-    .replay-size { color: var(--text-muted); font-size: 11px; flex-shrink: 0; margin-left: 8px; }
+    .replay-name { font-weight: 600; color: var(--silver-metal); }
+    .replay-meta { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+    .replay-size { font-weight: 700; color: var(--cyan-neon); }
+
+    /* Toast */
+    #toast {
+      position: absolute; top: 100px; left: 50%; transform: translateX(-50%) translateY(-20px);
+      background: rgba(11, 21, 40, 0.95); border: 1px solid var(--cyan-neon);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 16px var(--cyan-subtle);
+      color: var(--text); font-size: 13px; font-weight: 700;
+      padding: 12px 22px; border-radius: 99px; z-index: 100;
+      opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: flex; align-items: center; gap: 8px;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   </style>
 </head>
 <body>
 <div id="app">
+
+  <!-- Toast Notification -->
+  <div id="toast"></div>
+
+  <!-- App Header (MARTINS AI) -->
+  <div id="app-header">
+    <div class="brand-group">
+      <!-- Logo Vetorial MARTINS AI -->
+      <svg class="brand-logo-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15 85V15L50 55L85 15V85H68V42L50 64L32 42V85H15Z" fill="#0b1528" stroke="#00a8e8" stroke-width="4"/>
+        <path d="M50 55L85 15V85H68V42L50 64Z" fill="url(#silver-grad)"/>
+        <!-- Neural Nodes -->
+        <circle cx="20" cy="25" r="3" fill="#00a8e8"/>
+        <circle cx="35" cy="40" r="2.5" fill="#00a8e8"/>
+        <circle cx="50" cy="55" r="4" fill="#00f5d4"/>
+        <line x1="20" y1="25" x2="35" y2="40" stroke="#00a8e8" stroke-width="1.5"/>
+        <line x1="35" y1="40" x2="50" y2="55" stroke="#00a8e8" stroke-width="1.5"/>
+        <defs>
+          <linearGradient id="silver-grad" x1="50" y1="15" x2="85" y2="85" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#e0e1dd"/>
+            <stop offset="1" stop-color="#778da9"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div class="brand-text-wrap">
+        <span class="brand-title">MARTINS AI</span>
+        <span class="brand-subtitle">Replay System</span>
+      </div>
+    </div>
+
+    <!-- Mode Switcher Pill -->
+    <button id="btn-mode-toggle" title="Alternar entre Câmera (Filmando) e Controle Remoto">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+      <span id="mode-label">Modo Câmera</span>
+    </button>
+  </div>
 
   <!-- Status Bar -->
   <div id="status-bar">
@@ -326,28 +414,28 @@
       <div id="rec-dot" class="inactive"></div>
       <span id="rec-label" class="inactive">AGUARDANDO</span>
     </div>
-    <span id="buffer-text">0.0 / 30s</span>
-    <button id="btn-mode-toggle" title="Alternar entre Câmera (Filmando) e Controle Remoto" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;cursor:pointer;">
-      <span id="mode-label">📹 Câmera</span>
-    </button>
+    <span id="buffer-text">0.0 / 15s</span>
     <span id="save-count-badge">0 replay(s)</span>
   </div>
   <div id="buffer-bar-wrap"><div id="buffer-bar"></div></div>
 
-  <!-- Camera -->
+  <!-- Camera Viewport (Fix sem esticar / Aspect Ratio Preservado) -->
   <div id="cam-container">
     <video id="cam-video" autoplay playsinline muted></video>
     <img id="cam-mjpeg" alt="stream" />
     <div id="cam-placeholder">
-      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+      <svg id="cam-placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="3" ry="3"/>
       </svg>
       <p id="cam-placeholder-text">Iniciando câmera...</p>
       <div id="cam-placeholder-action" style="display:none; margin-top:8px;"></div>
     </div>
     <!-- Overlay bottom -->
     <div id="cam-overlay">
-      <span id="gesture-badge">🤚 GESTO DETECTADO</span>
+      <span id="gesture-badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-4 0v5M14 10V4a2 2 0 0 0-4 0v6M10 10.5V2a2 2 0 0 0-4 0v9M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.9-2.3L2.3 14.8a2 2 0 0 1 2.8-2.8l2.9 2.9"/></svg>
+        GESTO DETECTADO
+      </span>
       <div id="saving-indicator">
         <div id="saving-dot"></div>
         <span id="saving-label">SALVANDO...</span>
@@ -355,31 +443,22 @@
     </div>
   </div>
 
-  <!-- Controls -->
+  <!-- Controls Dock -->
   <div id="controls">
-    <!-- Switch Camera -->
-    <button id="btn-cam-switch" aria-label="Trocar câmera">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-        <circle cx="12" cy="13" r="4"/>
-        <path d="M12 9v4l2 2" stroke-width="1.5"/>
-      </svg>
+    <!-- Switch Camera (Front/Rear) -->
+    <button id="btn-cam-switch" class="btn-dock-side" aria-label="Trocar câmera">
+      <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/><path d="M12 9v4l2 2"/></svg>
     </button>
 
     <!-- REPLAY Button -->
     <button id="btn-replay" class="buffering" aria-label="Salvar Replay">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
-        <polygon points="5,3 19,12 5,21"/>
-      </svg>
+      <svg viewBox="0 0 24 24"><polygon points="11,19 2,12 11,5"/><polygon points="22,19 13,12 22,5"/></svg>
       <span id="btn-replay-label">REPLAY</span>
     </button>
 
-    <!-- Settings -->
-    <button id="btn-settings" aria-label="Configurações">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="3"/>
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-      </svg>
+    <!-- Settings Button -->
+    <button id="btn-settings" class="btn-dock-side" aria-label="Configurações">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     </button>
   </div>
 
@@ -387,56 +466,52 @@
   <div id="settings-overlay">
     <div id="settings-panel">
       <div class="panel-handle"></div>
-      <div class="panel-title">⚙️ Configurações</div>
+      <div class="panel-title">
+        <span>Configurações</span>
+        <button id="btn-close-settings" style="background:none;border:none;color:var(--text-muted);cursor:pointer;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
 
+      <!-- Duração do Replay -->
       <div class="setting-group">
-        <div class="setting-label">Buffer do Replay</div>
+        <div class="setting-label">Duração do Replay Retroativo</div>
+        <div class="chip-group" id="chips-duration">
+          <div class="chip" data-val="15">15 segundos</div>
+          <div class="chip" data-val="30">30 segundos</div>
+          <div class="chip" data-val="60">60 segundos</div>
+        </div>
+      </div>
+
+      <!-- Webhook N8N -->
+      <div class="setting-group">
+        <div class="setting-label">Webhook WhatsApp (N8N)</div>
+        <input type="url" id="n8n-url" placeholder="https://seu-n8n.com/webhook/..." />
+      </div>
+
+      <!-- Câmera Externa -->
+      <div class="setting-group">
         <div class="setting-row">
           <div>
-            <div class="setting-row-label">Duração</div>
-            <div class="setting-row-desc">Segundos gravados no buffer</div>
+            <div class="setting-row-label">Usar Câmera Externa</div>
+            <div class="setting-row-desc">Iriun Webcam / RTSP / MJPEG IP</div>
           </div>
-          <div class="chips" id="chips-duration">
-            <div class="chip" data-val="15">15s</div>
-            <div class="chip active" data-val="30">30s</div>
-            <div class="chip" data-val="60">60s</div>
-          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-ext-cam" />
+            <span class="toggle-knob"></span>
+          </label>
+        </div>
+        <div id="ext-cam-url-wrap" style="display:none;">
+          <input type="text" id="ext-cam-url" placeholder="http://192.168.1.50:8080/video" />
         </div>
       </div>
 
+      <!-- Gesto YOLO -->
       <div class="setting-group">
-        <div class="setting-label">Câmera</div>
-        <div class="setting-row" style="flex-direction:column;align-items:flex-start;">
-          <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
-            <div>
-              <div class="setting-row-label">Câmera Externa</div>
-              <div class="setting-row-desc">Iriun Webcam ou IP Cam (MJPEG/RTSP)</div>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-ext-cam" />
-              <span class="toggle-knob"></span>
-            </label>
-          </div>
-          <div id="ext-cam-url-wrap" style="width:100%;display:none;margin-top:4px;">
-            <input type="url" id="ext-cam-url" placeholder="http://192.168.0.10:8080/video" />
-          </div>
-        </div>
-      </div>
-
-      <div class="setting-group">
-        <div class="setting-label">WhatsApp / N8N</div>
-        <div class="setting-row" style="flex-direction:column;align-items:flex-start;">
-          <div class="setting-row-label">URL do Webhook N8N</div>
-          <input type="url" id="n8n-url" placeholder="https://n8n.exemplo.com/webhook/..." />
-        </div>
-      </div>
-
-      <div class="setting-group">
-        <div class="setting-label">Detecção de Gesto (YOLO)</div>
         <div class="setting-row">
           <div>
-            <div class="setting-row-label">Braço Levantado</div>
-            <div class="setting-row-desc">Pesado — recomendado apenas em celulares potentes</div>
+            <div class="setting-row-label">Detecção de Gosto (YOLO)</div>
+            <div class="setting-row-desc">Levantar braço para acionar o replay</div>
           </div>
           <label class="toggle-switch">
             <input type="checkbox" id="toggle-gesture" />
@@ -445,29 +520,29 @@
         </div>
       </div>
 
-      <div class="setting-group" id="replays-section">
-        <div class="setting-label">Últimos Replays</div>
-        <div id="replays-list"><div style="color:var(--text-muted);font-size:13px;">Carregando...</div></div>
+      <!-- Histórico Replays -->
+      <div class="setting-group">
+        <div class="setting-label">Últimos Replays Gerados</div>
+        <div id="replays-list"></div>
       </div>
 
-      <button id="btn-save-settings">Salvar e Aplicar</button>
+      <button id="btn-save-settings">Salvar Configurações</button>
     </div>
   </div>
 
-  <!-- Toast -->
-  <div id="toast"></div>
 </div>
 
 <script>
-// ─── State ───────────────────────────────────────────────────────────────────
+// ─── App State ────────────────────────────────────────────────────────────────
 const state = {
   recording: false,
   bufferSecs: 0,
-  maxSecs: 30,
+  maxSecs: 15,
   saving: false,
   saveCount: 0,
   cameraMode: 'native',
   facingMode: 'environment',
+  isRemoteMode: false,
   settings: {}
 };
 
@@ -480,6 +555,7 @@ const $saveBadge     = document.getElementById('save-count-badge');
 const $btnReplay     = document.getElementById('btn-replay');
 const $btnCamSwitch  = document.getElementById('btn-cam-switch');
 const $btnSettings   = document.getElementById('btn-settings');
+const $btnCloseSet   = document.getElementById('btn-close-settings');
 const $camVideo      = document.getElementById('cam-video');
 const $camMjpeg      = document.getElementById('cam-mjpeg');
 const $camPlaceholder= document.getElementById('cam-placeholder');
@@ -513,7 +589,7 @@ function setCamPlaceholderError(title, detail, actionHtml = '') {
   $camPlaceholder.style.display = 'flex';
   if ($camPlaceholderText) {
     $camPlaceholderText.innerHTML = `
-      <span style="color:#ff6b7a;font-weight:700;font-size:15px;display:block;margin-bottom:6px;">${title}</span>
+      <span style="color:#00a8e8;font-weight:800;font-size:16px;display:block;margin-bottom:6px;">${title}</span>
       <span style="font-size:12px;line-height:1.5;color:var(--text-muted);display:block;padding:0 16px;max-width:320px;margin:0 auto;">${detail}</span>
     `;
   }
@@ -528,11 +604,11 @@ function checkSecureContext() {
   if (!isLocal && location.protocol !== 'https:') {
     const httpsUrl = `https://${location.hostname}:${location.port || 8443}${location.pathname}${location.search}`;
     setCamPlaceholderError(
-      '⚠️ HTTPS Obrigatório',
+      'HTTPS Obrigatório',
       'Navegadores móveis exigem conexão HTTPS para liberar a câmera.<br>Toque no botão abaixo para abrir a versão segura:',
-      `<a href="${httpsUrl}" style="display:inline-block;padding:10px 18px;background:var(--accent);color:#fff;border-radius:12px;text-decoration:none;font-weight:700;font-size:13px;margin-top:8px;">Abrir via HTTPS 🔒</a>`
+      `<a href="${httpsUrl}" style="display:inline-block;padding:10px 18px;background:var(--cyan-neon);color:#fff;border-radius:12px;text-decoration:none;font-weight:700;font-size:13px;margin-top:8px;">Abrir via HTTPS 🔒</a>`
     );
-    showToast('⚠️ Acesse via HTTPS para usar a câmera', 6000);
+    showToast('Acesse via HTTPS para usar a câmera', 6000);
     return false;
   }
   return true;
@@ -572,17 +648,15 @@ document.addEventListener('visibilitychange', async () => {
 
 async function startNativeCamera() {
   requestWakeLock();
-  if (!checkSecureContext()) {
-    return;
-  }
+  if (!checkSecureContext()) return;
 
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     setCamPlaceholderError(
-      '❌ Câmera não acessível',
+      'Câmera não acessível',
       'A API de câmera está desabilitada no navegador. Isso ocorre quando o site não está em HTTPS.',
-      `<a href="https://${location.hostname}:${location.port || 8443}" style="display:inline-block;padding:10px 18px;background:var(--accent);color:#fff;border-radius:12px;text-decoration:none;font-weight:700;font-size:13px;margin-top:8px;">Acessar com HTTPS 🔒</a>`
+      `<a href="https://${location.hostname}:${location.port || 8443}" style="display:inline-block;padding:10px 18px;background:var(--cyan-neon);color:#fff;border-radius:12px;text-decoration:none;font-weight:700;font-size:13px;margin-top:8px;">Acessar com HTTPS 🔒</a>`
     );
-    showToast('❌ Acesse via HTTPS para liberar a câmera', 6000);
+    showToast('Acesse via HTTPS para liberar a câmera', 6000);
     return;
   }
 
@@ -637,53 +711,45 @@ async function startNativeCamera() {
     mediaRecorder.start(1000); // chunk a cada 1s
     state.recording = true;
     updateUI();
-    showToast('📷 Câmera ativa!');
+    showToast('Câmera ativa transmitindo continuamente');
   } catch (err) {
     console.error('[CAM]', err);
     let title = 'Erro na Câmera';
     let detail = 'Não foi possível acessar a câmera do dispositivo.';
-    const retryBtn = `<button onclick="startNativeCamera()" style="padding:10px 18px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:12px;font-weight:600;font-size:13px;cursor:pointer;margin-top:8px;">Tentar Novamente 🔄</button>`;
+    const retryBtn = `<button onclick="startNativeCamera()" style="padding:10px 18px;background:var(--bg-surface-2);border:1px solid var(--border);color:var(--text);border-radius:12px;font-weight:600;font-size:13px;cursor:pointer;margin-top:8px;">Tentar Novamente 🔄</button>`;
 
     if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
       title = 'Permissão Negada';
-      detail = 'O acesso à câmera foi bloqueado no navegador. Toque no ícone de configurações na barra de endereço do navegador e autorize a Câmera.';
-      showToast('❌ Permissão de câmera negada');
+      detail = 'O acesso à câmera foi bloqueado no navegador. Autorize a câmera nas configurações do navegador.';
+      showToast('Permissão de câmera negada');
     } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
       title = 'Câmera Não Encontrada';
       detail = 'Nenhuma câmera compatível detectada no aparelho.';
-      showToast('❌ Câmera não encontrada');
+      showToast('Câmera não encontrada');
     } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
       title = 'Câmera Ocupada';
-      detail = 'A câmera está sendo usada por outro app. Feche outros aplicativos de câmera e tente novamente.';
-      showToast('❌ Câmera ocupada por outro app');
-    } else if (err.name === 'SecurityError') {
-      title = 'HTTPS Necessário';
-      detail = 'Acesso à câmera bloqueado por política de segurança do navegador (HTTPS obrigatório).';
-      showToast('❌ Acesso restrito a HTTPS');
-    } else {
-      detail = err.message || 'Erro desconhecido ao abrir a câmera.';
-      showToast('❌ ' + detail);
+      detail = 'A câmera está sendo usada por outro app. Feche outros aplicativos de câmera.';
+      showToast('Câmera ocupada por outro app');
     }
-
     setCamPlaceholderError(title, detail, retryBtn);
   }
 }
 
 function startExternalCamera(url) {
   if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-    mediaRecorder.stop();
+    try { mediaRecorder.stop(); } catch(e){}
   }
-  if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+  if (mediaStream) { try { mediaStream.getTracks().forEach(t => t.stop()); } catch(e){} mediaStream = null; }
   $camVideo.style.display = 'none';
   $camMjpeg.src = `/api/video/stream?t=${Date.now()}`;
   $camMjpeg.style.display = 'block';
   $camPlaceholder.style.display = 'none';
   state.recording = true;
   updateUI();
-  showToast('📷 Câmera externa conectada!');
+  showToast('Câmera externa conectada');
 }
 
-// ─── Replay ───────────────────────────────────────────────────────────────────
+// ─── Replay Trigger ───────────────────────────────────────────────────────────
 async function triggerReplay(source = 'botão') {
   if (state.saving) return;
   try {
@@ -694,13 +760,13 @@ async function triggerReplay(source = 'botão') {
     });
     const j = await r.json();
     if (j.status === 'saving') {
-      showToast('🎬 Salvando replay...');
+      showToast('Salvando e enviando Replay para WhatsApp...');
       $btnReplay.classList.add('saving');
     } else {
-      showToast('⏳ Buffer ainda enchendo, aguarde...');
+      showToast('Aguarde acumulando buffer...');
     }
   } catch(e) {
-    showToast('❌ Erro ao conectar com o servidor');
+    showToast('Erro ao conectar com o servidor');
   }
 }
 
@@ -723,8 +789,8 @@ function updateUI(status) {
   $bufBar.style.width = (pct * 100) + '%';
   const isFull = state.bufferSecs >= (state.maxSecs - 0.5);
   $bufText.textContent = isFull 
-    ? `🟢 ${state.maxSecs}s (cheio)` 
-    : `⏳ ${state.bufferSecs.toFixed(1)} / ${state.maxSecs}s`;
+    ? `${state.maxSecs}s (cheio)` 
+    : `${state.bufferSecs.toFixed(1)} / ${state.maxSecs}s`;
 
   if (state.recording || (status && status.active_cams > 0)) {
     $recDot.classList.remove('inactive');
@@ -749,11 +815,6 @@ function updateUI(status) {
     $saveBadge.textContent = `${state.saveCount} replay(s)`;
     $saveBadge.classList.add('visible');
   }
-
-  // Quando termina de salvar
-  if (!state.saving) {
-    $btnReplay.classList.remove('saving');
-  }
 }
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
@@ -768,7 +829,6 @@ async function loadSettings() {
       startNativeCamera();
     }
   } catch(e) {
-    // Fallback: tenta câmera nativa
     startNativeCamera();
   }
 }
@@ -779,7 +839,7 @@ function applySettingsToUI(s) {
   $toggleExtCam.checked = s.camera_mode === 'external';
   $extCamWrap.style.display = s.camera_mode === 'external' ? 'block' : 'none';
   $toggleGesture.checked = s.gesture_enabled || false;
-  state.maxSecs = s.replay_seconds || 30;
+  state.maxSecs = s.replay_seconds || 15;
   state.cameraMode = s.camera_mode || 'native';
 
   // Chips
@@ -791,7 +851,7 @@ function applySettingsToUI(s) {
 async function saveSettings() {
   const activeChip = document.querySelector('#chips-duration .chip.active');
   const payload = {
-    replay_seconds:   activeChip ? parseInt(activeChip.dataset.val) : 30,
+    replay_seconds:   activeChip ? parseInt(activeChip.dataset.val) : 15,
     n8n_webhook_url:  $n8nUrl.value.trim(),
     camera_mode:      $toggleExtCam.checked ? 'external' : 'native',
     external_cam_url: $extCamUrl.value.trim(),
@@ -805,17 +865,16 @@ async function saveSettings() {
     });
     state.settings = (await r.json()).settings;
     state.maxSecs = payload.replay_seconds;
-    showToast('✅ Configurações salvas!');
+    showToast('Configurações salvas!');
     closeSettings();
 
-    // Reinicia câmera se necessário
     if (payload.camera_mode === 'external' && payload.external_cam_url) {
       startExternalCamera(payload.external_cam_url);
     } else if (payload.camera_mode === 'native') {
       startNativeCamera();
     }
   } catch(e) {
-    showToast('❌ Erro ao salvar configurações');
+    showToast('Erro ao salvar configurações');
   }
 }
 
@@ -824,7 +883,7 @@ async function loadReplays() {
     const r = await fetch('/api/replays');
     const { replays } = await r.json();
     if (!replays.length) {
-      $replaysList.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">Nenhum replay salvo.</div>';
+      $replaysList.innerHTML = '<div style="color:var(--text-muted);font-size:12px;">Nenhum replay salvo.</div>';
       return;
     }
     $replaysList.innerHTML = replays.map(rep => `
@@ -857,25 +916,6 @@ function closeSettings() {
   $settingsOvl.classList.remove('open');
 }
 
-// ─── Event Listeners ──────────────────────────────────────────────────────────
-$btnReplay.addEventListener('click', () => triggerReplay('botão'));
-
-$btnCamSwitch.addEventListener('click', () => {
-  if (state.cameraMode !== 'native') return;
-  state.facingMode = state.facingMode === 'environment' ? 'user' : 'environment';
-  startNativeCamera();
-});
-
-$btnSettings.addEventListener('click', openSettings);
-
-$settingsOvl.addEventListener('click', (e) => {
-  if (e.target === $settingsOvl) closeSettings();
-});
-
-$toggleExtCam.addEventListener('change', () => {
-  $extCamWrap.style.display = $toggleExtCam.checked ? 'block' : 'none';
-});
-
 function toggleAppMode() {
   state.isRemoteMode = !state.isRemoteMode;
   if (state.isRemoteMode) {
@@ -891,7 +931,7 @@ function toggleAppMode() {
     $camPlaceholder.style.display = 'flex';
     if ($camPlaceholderText) {
       $camPlaceholderText.innerHTML = `
-        <span style="color:#ffd166;font-weight:700;font-size:16px;display:block;margin-bottom:6px;">🎮 Modo Controle Remoto</span>
+        <span style="color:var(--cyan-neon);font-weight:800;font-size:16px;display:block;margin-bottom:6px;">Modo Controle Remoto</span>
         <span style="font-size:12px;line-height:1.5;color:var(--text-muted);display:block;padding:0 16px;max-width:320px;margin:0 auto;">
           Este dispositivo está operando como acionador remoto.<br>A câmera principal no tripé grava continuamente na nuvem.
         </span>
@@ -900,13 +940,42 @@ function toggleAppMode() {
     if ($camPlaceholderAction) {
       $camPlaceholderAction.style.display = 'none';
     }
-    if ($modeLabel) $modeLabel.textContent = '🎮 Remoto';
-    showToast('🎮 Modo Controle Remoto ativado!');
+    if ($modeLabel) $modeLabel.textContent = 'Modo Remoto';
+    showToast('Modo Controle Remoto ativado');
   } else {
-    if ($modeLabel) $modeLabel.textContent = '📹 Câmera';
+    if ($modeLabel) $modeLabel.textContent = 'Modo Câmera';
     startNativeCamera();
   }
 }
+
+// ─── Event Listeners ──────────────────────────────────────────────────────────
+$btnReplay.addEventListener('click', () => triggerReplay('botão'));
+
+$btnCamSwitch.addEventListener('click', () => {
+  if (state.cameraMode !== 'native') return;
+  state.facingMode = state.facingMode === 'environment' ? 'user' : 'environment';
+  startNativeCamera();
+});
+
+$btnSettings.addEventListener('click', openSettings);
+if ($btnCloseSet) $btnCloseSet.addEventListener('click', closeSettings);
+
+$settingsOvl.addEventListener('click', (e) => {
+  if (e.target === $settingsOvl) closeSettings();
+});
+
+$toggleExtCam.addEventListener('change', () => {
+  $extCamWrap.style.display = $toggleExtCam.checked ? 'block' : 'none';
+});
+
+$btnSaveSet.addEventListener('click', saveSettings);
+
+$chipsDuration.addEventListener('click', (e) => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  document.querySelectorAll('#chips-duration .chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+});
 
 if ($btnModeToggle) {
   $btnModeToggle.addEventListener('click', toggleAppMode);
@@ -916,12 +985,10 @@ if ($btnModeToggle) {
 loadSettings();
 setInterval(pollStatus, 1000);
 
-// Vibração ao apertar REPLAY (se disponível)
 $btnReplay.addEventListener('touchstart', () => {
   if (navigator.vibrate) navigator.vibrate(30);
 });
 
-// Previne zoom duplo toque
 document.addEventListener('dblclick', e => e.preventDefault());
 </script>
 </body>

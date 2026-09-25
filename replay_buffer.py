@@ -165,17 +165,16 @@ class ReplayBuffer:
             ffmpeg_bin = get_ffmpeg_bin()
             _log(f"[FFMPEG] Convertendo via {os.path.basename(ffmpeg_bin)} (720p, max {target_duration:.1f}s, +faststart)...", CYAN)
 
-            # Comando com suporte a resiliência de pacotes:
-            # -fflags +genpts+discardcorrupt: descarta frames parciais/incompletos no inicio do stream (elimina o quadriculado)
-            # -vf setpts=PTS-STARTPTS,scale=-2:720: reseta linha de tempo e ajusta resolução
-            # -t target_duration: garante o tempo configurado (ex: 15s)
+            # Comando com suporte a resiliência de pacotes e proporção original intacta:
+            # -fflags +genpts+discardcorrupt: descarta frames parciais no inicio do stream (elimina o quadriculado)
+            # -vf scale='min(1280,iw)':-2:force_original_aspect_ratio=decrease: preserva proporção original perfeita (sem esticar)
             cmd = [
                 ffmpeg_bin, "-y",
                 "-fflags", "+genpts+discardcorrupt",
                 "-err_detect", "ignore_err",
                 "-i", webm_path,
                 "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100",
-                "-vf", "setpts=PTS-STARTPTS,scale=-2:720",
+                "-vf", "setpts=PTS-STARTPTS,scale='min(1280,iw)':-2:force_original_aspect_ratio=decrease,pad=ceil(iw/2)*2:ceil(ih/2)*2",
                 "-t", f"{target_duration:.2f}",
                 "-c:v", "libx264",
                 "-profile:v", "main",
