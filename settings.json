@@ -1,0 +1,11 @@
+{
+  "replay_seconds": 15,
+  "n8n_webhook_url": "https://geral.n8n.p2me0s.easypanel.host/webhook/replay",
+  "camera_mode": "native",
+  "external_cam_url": "",
+  "gesture_enabled": true,
+  "gesture_hold_secs": 5.0,
+  "server_port": 8443,
+  "output_dir": "replays",
+  "debounce_secs": 2.0
+}

@@ -1,0 +1,48 @@
+# Ambientes virtuais
+.venv/
+venv/
+env/
+ENV/
+
+# Python cache e compilação
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Testes e cobertura
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Certificados locais gerados em tempo de execução
+cert.pem
+key.pem
+*.crt
+*.key
+*.pem
+
+# Diretório de vídeos gravados (replays)
+replays/*
+!replays/.gitkeep
+*.mp4
+*.webm
+*.avi
+*.mkv
+
+# Arquivos de configuração local e variáveis de ambiente
+.env
+.env.local
+.env.*.local
+
+# Antigravity / IDE agent cache
+.agent/
+.agents/
+.idea/
+.vscode/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,14 @@
+.git
+.gitignore
+.venv
+venv
+__pycache__
+*.pyc
+replays/*.mp4
+replays/*.webm
+cert.pem
+key.pem
+.agent
+.agents
+.pytest_cache
+INICIAR_MOBILE.bat

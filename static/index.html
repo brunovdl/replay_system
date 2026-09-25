@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0a0f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>Replay Mobile</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:         #0a0a0f;
+      --bg2:        #12121a;
+      --bg3:        #1a1a26;
+      --surface:    #1e1e2e;
+      --border:     rgba(255,255,255,0.08);
+      --accent:     #e63946;
+      --accent-glow:rgba(230,57,70,0.35);
+      --accent2:    #7c4dff;
+      --green:      #06d6a0;
+      --yellow:     #ffd166;
+      --text:       #f0f0f8;
+      --text-muted: rgba(240,240,248,0.45);
+      --radius:     16px;
+      --font:       'Inter', system-ui, sans-serif;
+    }
+    html, body {
+      height: 100%; width: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    /* ── Layout ───────────────────────────────────────────────────── */
+    #app {
+      display: flex; flex-direction: column;
+      height: 100dvh; width: 100%;
+      position: relative; overflow: hidden;
+    }
+
+    /* ── Status Bar ──────────────────────────────────────────────── */
+    #status-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 16px 6px;
+      background: linear-gradient(180deg, rgba(10,10,15,0.95) 0%, transparent 100%);
+      position: absolute; top: 0; left: 0; right: 0; z-index: 10;
+    }
+    #rec-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--accent); margin-right: 6px;
+      animation: pulse-dot 1.2s ease-in-out infinite;
+    }
+    #rec-dot.inactive { background: var(--text-muted); animation: none; }
+    @keyframes pulse-dot {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.7); }
+    }
+    .status-left { display: flex; align-items: center; gap: 6px; }
+    #rec-label { font-size: 12px; font-weight: 600; letter-spacing: 1.5px; color: var(--accent); }
+    #rec-label.inactive { color: var(--text-muted); }
+    #buffer-text { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    #save-count-badge {
+      background: var(--accent2); color: white;
+      font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 99px;
+      display: none;
+    }
+    #save-count-badge.visible { display: block; }
+
+    /* ── Buffer Progress Bar ─────────────────────────────────────── */
+    #buffer-bar-wrap {
+      position: absolute; top: 38px; left: 0; right: 0; height: 3px; z-index: 10;
+    }
+    #buffer-bar {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, #e63946, #ffd166, #06d6a0);
+      transition: width 0.5s ease;
+      border-radius: 0 2px 2px 0;
+    }
+
+    /* ── Camera Preview ──────────────────────────────────────────── */
+    #cam-container {
+      flex: 1; position: relative; overflow: hidden;
+      background: #000;
+    }
+    #cam-video {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1); /* espelho para câmera frontal */
+    }
+    #cam-video.env-cam { transform: scaleX(1); } /* câmera traseira: sem espelho */
+    #cam-mjpeg {
+      width: 100%; height: 100%;
+      object-fit: cover; display: none;
+    }
+    #cam-placeholder {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 12px; color: var(--text-muted);
+    }
+    #cam-placeholder svg { opacity: 0.25; }
+    #cam-placeholder p { font-size: 14px; }
+
+    /* Overlay info no canto inferior do vídeo */
+    #cam-overlay {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: linear-gradient(0deg, rgba(0,0,0,0.75) 0%, transparent 100%);
+      padding: 20px 16px 8px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    #gesture-badge {
+      background: rgba(6,214,160,0.15);
+      border: 1px solid rgba(6,214,160,0.3);
+      color: var(--green);
+      font-size: 11px; font-weight: 600;
+      padding: 4px 10px; border-radius: 99px;
+      display: none;
+    }
+    #gesture-badge.visible { display: block; }
+    #saving-indicator {
+      display: flex; align-items: center; gap: 6px;
+      opacity: 0; transition: opacity 0.3s;
+    }
+    #saving-indicator.visible { opacity: 1; }
+    #saving-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent);
+      animation: pulse-dot 0.6s ease-in-out infinite;
+    }
+    #saving-label { font-size: 12px; font-weight: 600; color: var(--accent); }
+
+    /* ── Replay Button ───────────────────────────────────────────── */
+    #controls {
+      padding: 16px 24px 20px;
+      background: var(--bg2);
+      display: flex; align-items: center; justify-content: center;
+      gap: 24px;
+      border-top: 1px solid var(--border);
+    }
+    #btn-cam-switch {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: var(--surface); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    #btn-cam-switch:active { transform: scale(0.9); background: var(--bg3); }
+    #btn-replay {
+      width: 88px; height: 88px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #ff6b7a, #e63946 60%, #b52232);
+      border: 3px solid rgba(230,57,70,0.4);
+      box-shadow: 0 0 0 0 var(--accent-glow), 0 8px 32px rgba(230,57,70,0.4);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      position: relative; outline: none;
+      flex-shrink: 0;
+    }
+    #btn-replay:active { transform: scale(0.9); box-shadow: 0 0 0 0 transparent; }
+    #btn-replay.saving {
+      animation: replay-pulse 0.8s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+    #btn-replay.buffering {
+      opacity: 0.5; pointer-events: none;
+    }
+    @keyframes replay-pulse {
+      from { box-shadow: 0 0 0 0 var(--accent-glow), 0 4px 16px rgba(230,57,70,0.3); }
+      to   { box-shadow: 0 0 0 18px rgba(230,57,70,0), 0 4px 16px rgba(230,57,70,0.3); }
+    }
+    #btn-replay svg { pointer-events: none; }
+    #btn-replay-label {
+      font-size: 9px; font-weight: 800; letter-spacing: 1.5px;
+      color: rgba(255,255,255,0.85); margin-top: 3px; pointer-events: none;
+    }
+    #btn-settings {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: var(--surface); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    #btn-settings:active { transform: scale(0.9); background: var(--bg3); }
+
+    /* ── Settings Panel ──────────────────────────────────────────── */
+    #settings-overlay {
+      position: absolute; inset: 0; z-index: 50;
+      background: rgba(0,0,0,0.7);
+      display: flex; align-items: flex-end;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    #settings-overlay.open { opacity: 1; pointer-events: all; }
+    #settings-panel {
+      width: 100%; background: var(--bg2);
+      border-radius: 24px 24px 0 0;
+      padding: 0 0 32px;
+      max-height: 85dvh; overflow-y: auto;
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    #settings-overlay.open #settings-panel { transform: translateY(0); }
+    .panel-handle {
+      width: 36px; height: 4px; border-radius: 2px;
+      background: var(--border); margin: 12px auto 16px;
+    }
+    .panel-title {
+      font-size: 18px; font-weight: 700;
+      padding: 0 20px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .setting-group { padding: 16px 20px 0; }
+    .setting-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 1px;
+      color: var(--text-muted); text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .setting-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px;
+      background: var(--surface); border-radius: 12px;
+      margin-bottom: 8px;
+    }
+    .setting-row-label { font-size: 14px; font-weight: 500; }
+    .setting-row-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    input[type="text"], input[type="url"], input[type="number"] {
+      background: var(--bg3); border: 1px solid var(--border);
+      color: var(--text); font-family: var(--font);
+      font-size: 13px; padding: 10px 12px;
+      border-radius: 10px; width: 100%;
+      margin-top: 8px; outline: none;
+      transition: border-color 0.2s;
+      -webkit-user-select: text; user-select: text;
+    }
+    input:focus { border-color: var(--accent2); }
+    /* Toggle switch */
+    .toggle-switch {
+      position: relative; width: 46px; height: 26px;
+      flex-shrink: 0;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-knob {
+      position: absolute; inset: 0;
+      background: var(--bg3); border-radius: 99px;
+      transition: background 0.25s;
+      cursor: pointer;
+    }
+    .toggle-knob::before {
+      content: ""; position: absolute;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: white; top: 3px; left: 3px;
+      transition: transform 0.25s;
+    }
+    .toggle-switch input:checked + .toggle-knob { background: var(--accent2); }
+    .toggle-switch input:checked + .toggle-knob::before { transform: translateX(20px); }
+    /* Chips */
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip {
+      padding: 8px 16px; border-radius: 99px;
+      font-size: 13px; font-weight: 600;
+      background: var(--bg3); border: 1px solid var(--border);
+      cursor: pointer; transition: all 0.2s;
+      color: var(--text-muted);
+    }
+    .chip.active {
+      background: var(--accent2); border-color: var(--accent2);
+      color: white;
+    }
+    /* Save button */
+    #btn-save-settings {
+      margin: 20px 20px 0;
+      width: calc(100% - 40px);
+      padding: 14px; border-radius: 14px;
+      background: var(--accent2); color: white;
+      font-family: var(--font); font-size: 15px; font-weight: 700;
+      border: none; cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s;
+    }
+    #btn-save-settings:active { transform: scale(0.97); opacity: 0.85; }
+
+    /* ── Toast ───────────────────────────────────────────────────── */
+    #toast {
+      position: absolute; bottom: 110px; left: 50%; transform: translateX(-50%);
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); font-size: 13px; font-weight: 500;
+      padding: 10px 20px; border-radius: 99px;
+      white-space: nowrap; z-index: 100;
+      opacity: 0; transition: opacity 0.3s, bottom 0.3s;
+      pointer-events: none;
+    }
+    #toast.show { opacity: 1; bottom: 120px; }
+
+    /* ── Scroll ─────────────────────────────────────────────────── */
+    #settings-panel::-webkit-scrollbar { width: 4px; }
+    #settings-panel::-webkit-scrollbar-track { background: transparent; }
+    #settings-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* Replays list */
+    .replay-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 14px; background: var(--bg3);
+      border-radius: 10px; margin-bottom: 6px;
+      font-size: 12px;
+    }
+    .replay-name { font-weight: 500; word-break: break-all; }
+    .replay-meta { color: var(--text-muted); font-size: 11px; margin-top: 2px; }
+    .replay-size { color: var(--text-muted); font-size: 11px; flex-shrink: 0; margin-left: 8px; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Status Bar -->
+  <div id="status-bar">
+    <div class="status-left">
+      <div id="rec-dot" class="inactive"></div>
+      <span id="rec-label" class="inactive">AGUARDANDO</span>
+    </div>
+    <span id="buffer-text">0.0 / 30s</span>
+    <span id="save-count-badge">0 replay(s)</span>
+  </div>
+  <div id="buffer-bar-wrap"><div id="buffer-bar"></div></div>
+
+  <!-- Camera -->
+  <div id="cam-container">
+    <video id="cam-video" autoplay playsinline muted></video>
+    <img id="cam-mjpeg" alt="stream" />
+    <div id="cam-placeholder">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+      </svg>
+      <p id="cam-placeholder-text">Iniciando câmera...</p>
+      <div id="cam-placeholder-action" style="display:none; margin-top:8px;"></div>
+    </div>
+    <!-- Overlay bottom -->
+    <div id="cam-overlay">
+      <span id="gesture-badge">🤚 GESTO DETECTADO</span>
+      <div id="saving-indicator">
+        <div id="saving-dot"></div>
+        <span id="saving-label">SALVANDO...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div id="controls">
+    <!-- Switch Camera -->
+    <button id="btn-cam-switch" aria-label="Trocar câmera">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+        <path d="M12 9v4l2 2" stroke-width="1.5"/>
+      </svg>
+    </button>
+
+    <!-- REPLAY Button -->
+    <button id="btn-replay" class="buffering" aria-label="Salvar Replay">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
+        <polygon points="5,3 19,12 5,21"/>
+      </svg>
+      <span id="btn-replay-label">REPLAY</span>
+    </button>
+
+    <!-- Settings -->
+    <button id="btn-settings" aria-label="Configurações">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Settings Panel -->
+  <div id="settings-overlay">
+    <div id="settings-panel">
+      <div class="panel-handle"></div>
+      <div class="panel-title">⚙️ Configurações</div>
+
+      <div class="setting-group">
+        <div class="setting-label">Buffer do Replay</div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-row-label">Duração</div>
+            <div class="setting-row-desc">Segundos gravados no buffer</div>
+          </div>
+          <div class="chips" id="chips-duration">
+            <div class="chip" data-val="15">15s</div>
+            <div class="chip active" data-val="30">30s</div>
+            <div class="chip" data-val="60">60s</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">Câmera</div>
+        <div class="setting-row" style="flex-direction:column;align-items:flex-start;">
+          <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
+            <div>
+              <div class="setting-row-label">Câmera Externa</div>
+              <div class="setting-row-desc">Iriun Webcam ou IP Cam (MJPEG/RTSP)</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-ext-cam" />
+              <span class="toggle-knob"></span>
+            </label>
+          </div>
+          <div id="ext-cam-url-wrap" style="width:100%;display:none;margin-top:4px;">
+            <input type="url" id="ext-cam-url" placeholder="http://192.168.0.10:8080/video" />
+          </div>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">WhatsApp / N8N</div>
+        <div class="setting-row" style="flex-direction:column;align-items:flex-start;">
+          <div class="setting-row-label">URL do Webhook N8N</div>
+          <input type="url" id="n8n-url" placeholder="https://n8n.exemplo.com/webhook/..." />
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">Detecção de Gesto (YOLO)</div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-row-label">Braço Levantado</div>
+            <div class="setting-row-desc">Pesado — recomendado apenas em celulares potentes</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-gesture" />
+            <span class="toggle-knob"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="setting-group" id="replays-section">
+        <div class="setting-label">Últimos Replays</div>
+        <div id="replays-list"><div style="color:var(--text-muted);font-size:13px;">Carregando...</div></div>
+      </div>
+
+      <button id="btn-save-settings">Salvar e Aplicar</button>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast"></div>
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────────────────────────────
+const state = {
+  recording: false,
+  bufferSecs: 0,
+  maxSecs: 30,
+  saving: false,
+  saveCount: 0,
+  cameraMode: 'native',
+  facingMode: 'environment',
+  settings: {}
+};
+
+// ─── DOM refs ─────────────────────────────────────────────────────────────────
+const $recDot        = document.getElementById('rec-dot');
+const $recLabel      = document.getElementById('rec-label');
+const $bufText       = document.getElementById('buffer-text');
+const $bufBar        = document.getElementById('buffer-bar');
+const $saveBadge     = document.getElementById('save-count-badge');
+const $btnReplay     = document.getElementById('btn-replay');
+const $btnCamSwitch  = document.getElementById('btn-cam-switch');
+const $btnSettings   = document.getElementById('btn-settings');
+const $camVideo      = document.getElementById('cam-video');
+const $camMjpeg      = document.getElementById('cam-mjpeg');
+const $camPlaceholder= document.getElementById('cam-placeholder');
+const $camPlaceholderText = document.getElementById('cam-placeholder-text');
+const $camPlaceholderAction = document.getElementById('cam-placeholder-action');
+const $savingInd     = document.getElementById('saving-indicator');
+const $gestureBadge  = document.getElementById('gesture-badge');
+const $settingsOvl   = document.getElementById('settings-overlay');
+const $n8nUrl        = document.getElementById('n8n-url');
+const $extCamUrl     = document.getElementById('ext-cam-url');
+const $toggleExtCam  = document.getElementById('toggle-ext-cam');
+const $extCamWrap    = document.getElementById('ext-cam-url-wrap');
+const $toggleGesture = document.getElementById('toggle-gesture');
+const $btnSaveSet    = document.getElementById('btn-save-settings');
+const $toast         = document.getElementById('toast');
+const $replaysList   = document.getElementById('replays-list');
+const $chipsDuration = document.getElementById('chips-duration');
+
+// ─── WebSocket & MediaRecorder ────────────────────────────────────────────────
+let ws = null;
+let mediaRecorder = null;
+let mediaStream = null;
+let isFirstChunk = true;
+let wsRetryTimer = null;
+
+function setCamPlaceholderError(title, detail, actionHtml = '') {
+  $camVideo.style.display = 'none';
+  $camMjpeg.style.display = 'none';
+  $camPlaceholder.style.display = 'flex';
+  if ($camPlaceholderText) {
+    $camPlaceholderText.innerHTML = `
+      <span style="color:#ff6b7a;font-weight:700;font-size:15px;display:block;margin-bottom:6px;">${title}</span>
+      <span style="font-size:12px;line-height:1.5;color:var(--text-muted);display:block;padding:0 16px;max-width:320px;margin:0 auto;">${detail}</span>
+    `;
+  }
+  if ($camPlaceholderAction) {
+    $camPlaceholderAction.innerHTML = actionHtml;
+    $camPlaceholderAction.style.display = actionHtml ? 'block' : 'none';
+  }
+}
+
+function checkSecureContext() {
+  const isLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
+  if (!isLocal && location.protocol !== 'https:') {
+    const httpsUrl = `https://${location.hostname}:${location.port || 8443}${location.pathname}${location.search}`;
+    setCamPlaceholderError(
+      '⚠️ HTTPS Obrigatório',
+      'Navegadores móveis exigem conexão HTTPS para liberar a câmera.<br>Toque no botão abaixo para abrir a versão segura:',
+      `<a href="${httpsUrl}" style="display:inline-block;padding:10px 18px;background:var(--accent);color:#fff;border-radius:12px;text-decoration:none;font-weight:700;font-size:13px;margin-top:8px;">Abrir via HTTPS 🔒</a>`
+    );
+    showToast('⚠️ Acesse via HTTPS para usar a câmera', 6000);
+    return false;
+  }
+  return true;
+}
+
+function connectWS() {
+  if (ws && ws.readyState === WebSocket.OPEN) return;
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}/ws/camera`);
+  ws.binaryType = 'arraybuffer';
+  ws.onopen  = () => console.log('[WS] Conectado');
+  ws.onclose = () => {
+    console.log('[WS] Desconectado — reconectando em 3s...');
+    wsRetryTimer = setTimeout(connectWS, 3000);
+  };
+  ws.onerror = () => ws.close();
+}
+
+async function startNativeCamera() {
+  if (!checkSecureContext()) {
+    return;
+  }
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    setCamPlaceholderError(
+      '❌ Câmera não acessível',
+      'A API de câmera está desabilitada no navegador. Isso ocorre quando o site não está em HTTPS.',
+      `<a href="https://${location.hostname}:${location.port || 8443}" style="display:inline-block;padding:10px 18px;background:var(--accent);color:#fff;border-radius:12px;text-decoration:none;font-weight:700;font-size:13px;margin-top:8px;">Acessar com HTTPS 🔒</a>`
+    );
+    showToast('❌ Acesse via HTTPS para liberar a câmera', 6000);
+    return;
+  }
+
+  try {
+    if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); }
+
+    const constraints = {
+      video: {
+        facingMode: state.facingMode,
+        width:  { ideal: 1280 },
+        height: { ideal: 720 }
+      },
+      audio: false
+    };
+    mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+    $camVideo.srcObject = mediaStream;
+    $camVideo.style.display = 'block';
+    $camMjpeg.style.display = 'none';
+    $camPlaceholder.style.display = 'none';
+
+    // Ajusta espelho conforme câmera
+    $camVideo.classList.toggle('env-cam', state.facingMode === 'environment');
+
+    // Detecta MIME type suportado
+    const mimes = [
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp8,opus',
+      'video/webm;codecs=vp9',
+      'video/webm;codecs=vp8',
+      'video/webm',
+      'video/mp4'
+    ];
+    const mime = mimes.find(m => MediaRecorder.isTypeSupported(m)) || '';
+
+    connectWS();
+    isFirstChunk = true;
+
+    mediaRecorder = new MediaRecorder(mediaStream, mime ? { mimeType: mime } : {});
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size < 10) return;
+      e.data.arrayBuffer().then(buf => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(buf);
+        }
+      });
+    };
+    mediaRecorder.start(1000); // chunk a cada 1s
+    state.recording = true;
+    updateUI();
+    showToast('📷 Câmera ativa!');
+  } catch (err) {
+    console.error('[CAM]', err);
+    let title = 'Erro na Câmera';
+    let detail = 'Não foi possível acessar a câmera do dispositivo.';
+    const retryBtn = `<button onclick="startNativeCamera()" style="padding:10px 18px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:12px;font-weight:600;font-size:13px;cursor:pointer;margin-top:8px;">Tentar Novamente 🔄</button>`;
+
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      title = 'Permissão Negada';
+      detail = 'O acesso à câmera foi bloqueado no navegador. Toque no ícone de configurações na barra de endereço do navegador e autorize a Câmera.';
+      showToast('❌ Permissão de câmera negada');
+    } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+      title = 'Câmera Não Encontrada';
+      detail = 'Nenhuma câmera compatível detectada no aparelho.';
+      showToast('❌ Câmera não encontrada');
+    } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+      title = 'Câmera Ocupada';
+      detail = 'A câmera está sendo usada por outro app. Feche outros aplicativos de câmera e tente novamente.';
+      showToast('❌ Câmera ocupada por outro app');
+    } else if (err.name === 'SecurityError') {
+      title = 'HTTPS Necessário';
+      detail = 'Acesso à câmera bloqueado por política de segurança do navegador (HTTPS obrigatório).';
+      showToast('❌ Acesso restrito a HTTPS');
+    } else {
+      detail = err.message || 'Erro desconhecido ao abrir a câmera.';
+      showToast('❌ ' + detail);
+    }
+
+    setCamPlaceholderError(title, detail, retryBtn);
+  }
+}
+
+function startExternalCamera(url) {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+  if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+  $camVideo.style.display = 'none';
+  $camMjpeg.src = `/api/video/stream?t=${Date.now()}`;
+  $camMjpeg.style.display = 'block';
+  $camPlaceholder.style.display = 'none';
+  state.recording = true;
+  updateUI();
+  showToast('📷 Câmera externa conectada!');
+}
+
+// ─── Replay ───────────────────────────────────────────────────────────────────
+async function triggerReplay(source = 'botão') {
+  if (state.saving) return;
+  try {
+    const r = await fetch('/api/save-replay', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source })
+    });
+    const j = await r.json();
+    if (j.status === 'saving') {
+      showToast('🎬 Salvando replay...');
+      $btnReplay.classList.add('saving');
+    } else {
+      showToast('⏳ Buffer ainda enchendo, aguarde...');
+    }
+  } catch(e) {
+    showToast('❌ Erro ao conectar com o servidor');
+  }
+}
+
+// ─── Status polling ───────────────────────────────────────────────────────────
+async function pollStatus() {
+  try {
+    const r = await fetch('/api/status');
+    const s = await r.json();
+    state.bufferSecs = s.buffer_secs;
+    state.maxSecs    = s.max_secs;
+    state.saving     = s.saving;
+    state.saveCount  = s.save_count;
+    updateUI(s);
+  } catch(e) {}
+}
+
+// ─── UI Update ────────────────────────────────────────────────────────────────
+function updateUI(status) {
+  const pct = Math.min(state.bufferSecs / state.maxSecs, 1);
+  $bufBar.style.width = (pct * 100) + '%';
+  $bufText.textContent = `${state.bufferSecs.toFixed(1)} / ${state.maxSecs}s`;
+
+  if (state.recording) {
+    $recDot.classList.remove('inactive');
+    $recLabel.classList.remove('inactive');
+    $recLabel.textContent = 'REC';
+  }
+
+  // Botão de replay
+  const ready = state.bufferSecs >= 3;
+  $btnReplay.classList.toggle('buffering', !ready && !state.saving);
+  $btnReplay.classList.toggle('saving', state.saving);
+
+  // Saving indicator
+  $savingInd.classList.toggle('visible', state.saving);
+
+  // Save count
+  if (state.saveCount > 0) {
+    $saveBadge.textContent = `${state.saveCount} replay(s)`;
+    $saveBadge.classList.add('visible');
+  }
+
+  // Quando termina de salvar
+  if (!state.saving) {
+    $btnReplay.classList.remove('saving');
+  }
+}
+
+// ─── Settings ─────────────────────────────────────────────────────────────────
+async function loadSettings() {
+  try {
+    const r = await fetch('/api/settings');
+    state.settings = await r.json();
+    applySettingsToUI(state.settings);
+    if (state.settings.camera_mode === 'external' && state.settings.external_cam_url) {
+      startExternalCamera(state.settings.external_cam_url);
+    } else {
+      startNativeCamera();
+    }
+  } catch(e) {
+    // Fallback: tenta câmera nativa
+    startNativeCamera();
+  }
+}
+
+function applySettingsToUI(s) {
+  $n8nUrl.value = s.n8n_webhook_url || '';
+  $extCamUrl.value = s.external_cam_url || '';
+  $toggleExtCam.checked = s.camera_mode === 'external';
+  $extCamWrap.style.display = s.camera_mode === 'external' ? 'block' : 'none';
+  $toggleGesture.checked = s.gesture_enabled || false;
+  state.maxSecs = s.replay_seconds || 30;
+  state.cameraMode = s.camera_mode || 'native';
+
+  // Chips
+  document.querySelectorAll('#chips-duration .chip').forEach(c => {
+    c.classList.toggle('active', parseInt(c.dataset.val) === s.replay_seconds);
+  });
+}
+
+async function saveSettings() {
+  const activeChip = document.querySelector('#chips-duration .chip.active');
+  const payload = {
+    replay_seconds:   activeChip ? parseInt(activeChip.dataset.val) : 30,
+    n8n_webhook_url:  $n8nUrl.value.trim(),
+    camera_mode:      $toggleExtCam.checked ? 'external' : 'native',
+    external_cam_url: $extCamUrl.value.trim(),
+    gesture_enabled:  $toggleGesture.checked,
+  };
+  try {
+    const r = await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    state.settings = (await r.json()).settings;
+    state.maxSecs = payload.replay_seconds;
+    showToast('✅ Configurações salvas!');
+    closeSettings();
+
+    // Reinicia câmera se necessário
+    if (payload.camera_mode === 'external' && payload.external_cam_url) {
+      startExternalCamera(payload.external_cam_url);
+    } else if (payload.camera_mode === 'native') {
+      startNativeCamera();
+    }
+  } catch(e) {
+    showToast('❌ Erro ao salvar configurações');
+  }
+}
+
+async function loadReplays() {
+  try {
+    const r = await fetch('/api/replays');
+    const { replays } = await r.json();
+    if (!replays.length) {
+      $replaysList.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">Nenhum replay salvo.</div>';
+      return;
+    }
+    $replaysList.innerHTML = replays.map(rep => `
+      <div class="replay-item">
+        <div>
+          <div class="replay-name">${rep.name}</div>
+          <div class="replay-meta">${rep.ts}</div>
+        </div>
+        <div class="replay-size">${rep.size_mb} MB</div>
+      </div>
+    `).join('');
+  } catch(e) {}
+}
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+let toastTimer = null;
+function showToast(msg) {
+  $toast.textContent = msg;
+  $toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => $toast.classList.remove('show'), 3000);
+}
+
+// ─── Settings open/close ──────────────────────────────────────────────────────
+function openSettings() {
+  $settingsOvl.classList.add('open');
+  loadReplays();
+}
+function closeSettings() {
+  $settingsOvl.classList.remove('open');
+}
+
+// ─── Event Listeners ──────────────────────────────────────────────────────────
+$btnReplay.addEventListener('click', () => triggerReplay('botão'));
+
+$btnCamSwitch.addEventListener('click', () => {
+  if (state.cameraMode !== 'native') return;
+  state.facingMode = state.facingMode === 'environment' ? 'user' : 'environment';
+  startNativeCamera();
+});
+
+$btnSettings.addEventListener('click', openSettings);
+
+$settingsOvl.addEventListener('click', (e) => {
+  if (e.target === $settingsOvl) closeSettings();
+});
+
+$toggleExtCam.addEventListener('change', () => {
+  $extCamWrap.style.display = $toggleExtCam.checked ? 'block' : 'none';
+});
+
+$btnSaveSet.addEventListener('click', saveSettings);
+
+// Chips de duração
+$chipsDuration.addEventListener('click', (e) => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  document.querySelectorAll('#chips-duration .chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+});
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+loadSettings();
+setInterval(pollStatus, 1000);
+
+// Vibração ao apertar REPLAY (se disponível)
+$btnReplay.addEventListener('touchstart', () => {
+  if (navigator.vibrate) navigator.vibrate(30);
+});
+
+// Previne zoom duplo toque
+document.addEventListener('dblclick', e => e.preventDefault());
+</script>
+</body>
+</html>
