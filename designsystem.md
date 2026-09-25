@@ -39,7 +39,7 @@ A identidade visual é baseada na marca **MARTINS AI**: alta tecnologia, intelig
 ## 🧩 3. Componentes de UI
 
 ### A. Cabeçalho & Marca (Header & Brand)
-- **Logo Vetorial MARTINS AI**: Exibida no topo com o 'M' estilizado em gradiente Cyan + Prata Metálico com nós neurais iluminados.
+- **Logo Oficial MARTINS AI**: Exibida no topo e nas configurações utilizando as imagens oficiais da marca (`logo-horizontal.png` e `logo-official.png`), integradas nativamente ao layout escuro *Cyber-Premium*.
 - **Barra de Status com Glow Cyan**: Indicador de buffer retroativo (`⏳ 12.5s / 15s` ou `🟢 15s cheio`).
 
 ### B. Viewport de Vídeo (Camera Canvas)

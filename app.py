@@ -177,11 +177,14 @@ async def lifespan(app_):
     # Shutdown
     stop_external_cam()
 
+from fastapi.staticfiles import StaticFiles
+
 app = FastAPI(title="Replay Mobile", version="1.0.0", lifespan=lifespan)
 
-# Serve arquivos estáticos (index.html)
+# Serve arquivos estáticos (index.html, logo.png, etc)
 static_dir = Path(__file__).parent / "static"
 static_dir.mkdir(exist_ok=True)
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
