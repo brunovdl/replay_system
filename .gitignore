@@ -1,48 +1,27 @@
-# Ambientes virtuais
+# Python & Virtualenv
 .venv/
 venv/
 env/
-ENV/
-
-# Python cache e compilação
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
-.Python
 
-# Testes e cobertura
-.pytest_cache/
-.coverage
-htmlcov/
+# Binaries & Downloads
+cloudflared.exe
+*.exe
 
-# Certificados locais gerados em tempo de execução
-cert.pem
-key.pem
-*.crt
-*.key
-*.pem
-
-# Diretório de vídeos gravados (replays)
-replays/*
-!replays/.gitkeep
+# Temporary files & video jobs
+scratch/
+temp_jobs/
 *.mp4
 *.webm
-*.avi
-*.mkv
 
-# Arquivos de configuração local e variáveis de ambiente
+# Environment variables
 .env
-.env.local
-.env.*.local
+backend/.env
 
-# Antigravity / IDE agent cache
-.agent/
-.agents/
-.idea/
+# Editor & OS
 .vscode/
-
-# Sistema operacional
-.DS_Store
+.idea/
 Thumbs.db
-desktop.ini
+.DS_Store

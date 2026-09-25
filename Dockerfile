@@ -1,31 +1,30 @@
-# Dockerfile para deploy no Easypanel
 FROM python:3.11-slim
 
-# Evita buffering no stdout/stderr e gravação de .pyc
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PORT=8000
+# Evita prompts interativos durante instalação de pacotes
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
 
-# Instala ffmpeg nativo no sistema e dependências básicas
+# Instala FFmpeg e dependências de sistema essenciais
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
+    ca-certificates \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Instala dependências Python
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Instala dependências Python primeiro (aproveita cache de build do Docker)
+COPY backend/requirements.txt /app/backend/requirements.txt
+RUN pip install --no-cache-dir -r /app/backend/requirements.txt
 
-# Copia código da aplicação
-COPY . .
+# Copia código do backend e frontend
+COPY backend/ /app/backend/
+COPY frontend/ /app/frontend/
 
-# Garante existência do diretório de saída
-RUN mkdir -p replays
+# Cria pasta para temporários
+RUN mkdir -p /app/scratch/temp_jobs
 
-# Porta exposta para o proxy reverso do Easypanel (Traefik)
 EXPOSE 8000
 
-# Execução da aplicação FastAPI
-CMD ["python", "app.py"]
+# Executa o servidor FastAPI com Uvicorn
+CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]

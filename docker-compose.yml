@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  replay-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: replay2-volei
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - WEBHOOK_URL=https://geral.n8n.p2me0s.easypanel.host/webhook/replay
+      - PORT=8000
+    volumes:
+      - ./scratch/temp_jobs:/app/scratch/temp_jobs

@@ -1,71 +1,61 @@
-# 🎬 Replay Web — Sistema de Replay Instantâneo na Nuvem
+# Replay 2.0 - Sistema de Câmera de Quadra para Vôlei
 
-Sistema de gravação contínua com buffer circular (15s / 30s / 60s) acessível via navegador web no celular ou desktop, com salvamento instantâneo e envio automático para o WhatsApp via webhook do N8N.
+Aplicação web mobile voltada para quadras esportivas que atua como câmera contínua e processador local de visão computacional. O smartphone (montado em tripé no modo horizontal/landscape) grava e mantém um buffer circular de 30 segundos com áudio da quadra.
 
-Projetado para rodar em containers na nuvem via **EasyPanel**, Docker ou localmente.
-
----
-
-## ✨ Funcionalidades
-
-- 📱 **100% Web / Mobile-first**: Acessível de qualquer smartphone sem necessidade de instalar aplicativos.
-- 🔄 **Buffer Circular em Memória**: Grava continuamente mantendo apenas os últimos N segundos configurados.
-- ⚡ **Conversão Instantânea H.264/AAC**: Codificação com `+faststart` totalmente compatível com WhatsApp.
-- 📲 **Integração WhatsApp / N8N**: Disparo do vídeo por Webhook multipart com métricas de duração e evento.
-- 🌐 **Pronto para Nuvem (Easypanel)**: Dockerfile pré-configurado com FFmpeg nativo e suporte a proxy reverso Traefik.
-- 🔒 **HTTPS & WebSockets**: Suporte a SSL público automático (Let's Encrypt no Easypanel) ou certificado local em desenvolvimento.
+Ao detectar um jogador com o braço erguido por 3 segundos (ou via botão manual na tela), a aplicação envia os fragmentos para o backend FastAPI. O backend normaliza e concatena o vídeo em MP4 (H.264 + AAC) em segundo plano e despacha para o webhook do **n8n**, que envia para os grupos de WhatsApp via **Evolution API**.
 
 ---
 
-## 🚀 Deploy no EasyPanel
+## Recursos Principais
 
-### Método 1: Via Git Repository (Recomendado)
-1. Crie um novo **App Service** no seu projeto do EasyPanel.
-2. Em **Source**, selecione **Git** e aponte para o seu repositório no GitHub.
-3. Em **Build**, o EasyPanel detectará o `Dockerfile` automaticamente.
-4. Em **Environment**, configure:
-   - `PORT`: `8000`
-5. Em **Domains**, adicione o domínio desejado (ex: `replay.seudominio.com`) com HTTPS habilitado.
+* **Buffer Circular Resiliente:** Gravação contínua em blocos autônomos de 5s (mantém últimos 30 segundos).
+* **Gatilho por IA (MediaPipe Pose):** Disparo ao manter o punho acima do ombro por 3 segundos consecutivos.
+* **Túnel HTTPS Automático (Cloudflare):** Permite acesso direto no Android e iPhone com certificado SSL oficial liberando a câmera sem configurações manuais.
+* **Seleção de Câmeras:** Suporte a alternância rápida de lentes (Frontal, Traseira Principal 1x, Ultra-Wide 0.5x).
+* **Processamento Assíncrono FFmpeg:** Concatenação e transcodificação rápida em background.
+* **Integração n8n & WhatsApp:** Envio automático via webhook multipart para a Evolution API.
 
 ---
 
-## 💻 Execução Local
+## Como Executar Localmente
 
+### Opção 1: Arquivos de Inicialização Rápida (Windows)
+* Dê duplo clique em `run_local.bat` ou execute no PowerShell:
+```powershell
+.\run_local.ps1
+```
+* O sistema cria o ambiente virtual Python, instala dependências e inicia o servidor FastAPI com o túnel HTTPS Cloudflare.
+* Abra `http://localhost:8000` no PC ou escaneie o QR Code na interface pelo celular.
+
+### Opção 2: Docker / Docker Compose
 ```bash
-# 1. Instalar dependências
-pip install -r requirements.txt
-
-# 2. Iniciar o servidor
-python app.py
+docker compose up --build
 ```
 
-O servidor iniciará automaticamente em `https://localhost:8443` (ou no IP da sua rede local).
-
 ---
 
-## ⚙️ Configurações
-
-As configurações podem ser ajustadas pelo menu de engrenagem na interface web ou via arquivo `settings.json`:
-
-| Campo | Padrão | Descrição |
-|---|---|---|
-| `replay_seconds` | `30` | Duração do buffer circular em segundos (15, 30 ou 60) |
-| `n8n_webhook_url` | `""` | URL do webhook do N8N para envio ao WhatsApp |
-| `camera_mode` | `"native"` | Câmera do celular (`native`) ou externa via URL (`external`) |
-| `output_dir` | `"replays"` | Pasta de armazenamento temporário dos replays |
-
----
-
-## 📦 Estrutura do Projeto
+## Estrutura do Projeto
 
 ```text
-├── app.py                # Servidor FastAPI com WebSocket e rotas REST
-├── replay_buffer.py      # Gerenciador de buffer circular e pipeline FFmpeg/N8N
-├── static/
-│   └── index.html        # Interface Web moderna dark mode (Mobile-first)
-├── replays/              # Diretório de armazenamento dos vídeos gerados
-├── Dockerfile            # Imagem de container otimizada para o Easypanel
-├── requirements.txt      # Dependências Python do projeto
-├── .gitignore            # Arquivos ignorados pelo Git
-└── README.md             # Documentação do projeto
+├── frontend/
+│   ├── index.html              # Interface do visualizador de câmera e HUD
+│   ├── css/
+│   │   └── style.css           # Estilos de alto contraste (Landscape mobile)
+│   └── js/
+│       ├── app.js              # Inicialização, câmera, Wake Lock e orquestração
+│       ├── recorder.js         # Buffer circular de blocos autônomos de 5s
+│       ├── pose.js             # MediaPipe Tasks Vision e gatilho de 3s
+│       ├── audio.js            # Síntese Web Audio (apito sonoro)
+│       └── config.js           # Gerenciador de configurações locais
+├── backend/
+│   ├── app/
+│   │   ├── main.py             # FastAPI app, rotas e static files mount
+│   │   ├── converter.py        # Pipeline FFmpeg assíncrono
+│   │   ├── tunnel.py           # Gerenciador do túnel Cloudflare HTTPS
+│   │   └── n8n_client.py       # Cliente HTTP com retry para o webhook do n8n
+│   ├── requirements.txt        # Dependências Python
+│   └── .env.example            # Exemplo de variáveis de ambiente
+├── docker-compose.yml          # Configuração Docker
+├── Dockerfile                  # Imagem base Python + FFmpeg
+└── run_local.bat               # Launcher local
 ```

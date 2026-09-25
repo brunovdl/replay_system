@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0e17">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Replay 2.0 - Câmera de Quadra</title>
+  <link rel="stylesheet" href="css/style.css?v=2.0.2">
+</head>
+<body>
+  <div id="app-container">
+    <!-- Aviso de rotação de tela para mobile -->
+    <div id="orientation-hint">
+      🔄 Gire o celular na horizontal para enquadrar a quadra inteira
+    </div>
+
+    <!-- Alerta de contexto inseguro (HTTP no celular) -->
+    <div id="insecure-context-banner" class="insecure-banner" style="display: none;">
+      <span>⚠️ <strong>Câmera bloqueada pelo Android:</strong> Conexão HTTPS necessária!</span>
+      <button id="btn-go-https" class="btn-banner-action">Usar Link Seguro</button>
+    </div>
+
+    <!-- Efeito visual de flash ao disparar -->
+    <div id="flash-effect" class="flash-effect"></div>
+
+    <!-- Feed da Câmera em Tela Cheia -->
+    <video id="camera-viewfinder" autoplay playsinline muted></video>
+    <canvas id="pose-canvas"></canvas>
+
+    <!-- Camada de HUD Superior e Inferior -->
+    <div class="hud-overlay">
+      <!-- Barra Superior -->
+      <div class="hud-top-bar">
+        <div class="hud-group">
+          <!-- Status do Buffer -->
+          <div id="buffer-status-badge" class="hud-badge" title="Buffer contínuo de gravação">
+            <span class="dot dot-red"></span>
+            <span id="buffer-time-text">0s / 30s</span>
+          </div>
+
+          <!-- Status da IA MediaPipe -->
+          <div id="ai-status-badge" class="hud-badge" title="Detecção de Pose MediaPipe">
+            <span class="dot dot-amber"></span>
+            <span>IA Pose</span>
+          </div>
+
+          <!-- Status do Backend -->
+          <div id="backend-status-badge" class="hud-badge" title="Conexão com FastAPI">
+            <span class="dot dot-amber"></span>
+            <span>Servidor</span>
+          </div>
+        </div>
+
+        <div class="hud-group">
+          <!-- Botão Conectar Celular / QR Code (HTTPS) -->
+          <button id="btn-qr-mobile" class="btn-icon" title="Conectar Celular (HTTPS / QR Code)" aria-label="Conectar Celular">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+              <line x1="12" y1="18" x2="12.01" y2="18"></line>
+            </svg>
+          </button>
+
+          <!-- Botão Trocar Câmera Rápido -->
+          <button id="btn-switch-camera" class="btn-icon" title="Trocar Câmera (Alternar Lente/Frontal)" aria-label="Trocar Câmera">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 16l-4 4m0 0l-4-4m4 4V8a5 5 0 0 0-5-5H7"></path>
+              <path d="M4 8l4-4m0 0l4 4M8 4v12a5 5 0 0 0 5 5h4"></path>
+            </svg>
+          </button>
+
+          <!-- Botão Tela Cheia -->
+          <button id="btn-fullscreen" class="btn-icon" title="Tela Cheia" aria-label="Tela Cheia">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+            </svg>
+          </button>
+
+          <!-- Botão Configurações -->
+          <button id="btn-settings" class="btn-icon" title="Configurações" aria-label="Configurações">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Cooldown Pill -->
+      <div id="cooldown-pill" class="cooldown-pill">
+        ⏳ Aguarde <span id="cooldown-seconds-text">15s</span> para novo replay
+      </div>
+
+      <!-- Centro: Feedback Visual do Gatilho (Anel + Contagem) -->
+      <div id="trigger-container" class="trigger-feedback-container">
+        <div class="progress-ring-box">
+          <svg class="progress-ring-svg">
+            <circle class="progress-ring-bg" cx="70" cy="70" r="60"></circle>
+            <circle id="progress-ring-bar" class="progress-ring-bar" cx="70" cy="70" r="60"></circle>
+          </svg>
+          <div id="trigger-counter-text" class="trigger-counter-text">3</div>
+        </div>
+        <div class="trigger-label">MANTENHA O BRAÇO LEVANTADO</div>
+      </div>
+
+      <!-- Barra Inferior com Botão Manual de Replay -->
+      <div class="hud-bottom-bar">
+        <button id="btn-manual-replay" class="btn-replay-action" title="Salvar Replay Imediatamente">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <span>SALVAR REPLAY (30s)</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Notificação Toast -->
+    <div id="toast-notification">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.5">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+      <span id="toast-message">Replay enviado com sucesso!</span>
+    </div>
+
+    <!-- Modal de Configurações -->
+    <div id="modal-settings" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 class="modal-title">Configurações do Replay</h2>
+          <button id="btn-close-modal" class="btn-icon">✕</button>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="setting-backend-url">URL do Backend FastAPI</label>
+          <input id="setting-backend-url" class="form-input" type="url" placeholder="http://192.168.1.50:8000">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="setting-camera-select">Câmera Ativa do Dispositivo</label>
+          <select id="setting-camera-select" class="form-select">
+            <option value="">Carregando câmeras...</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="setting-buffer-seconds">Duração do Replay (Buffer)</label>
+          <select id="setting-buffer-seconds" class="form-select">
+            <option value="15">15 Segundos</option>
+            <option value="30" selected>30 Segundos (Padrão)</option>
+            <option value="45">45 Segundos</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <span class="form-label">Som do Apito (Web Audio)</span>
+          <label class="switch">
+            <input id="setting-toggle-sound" type="checkbox" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="form-row">
+          <span class="form-label">Vibração no Disparo</span>
+          <label class="switch">
+            <input id="setting-toggle-vibration" type="checkbox" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button id="btn-test-backend" class="btn-secondary">Testar Conexão</button>
+          <button id="btn-save-settings" class="btn-primary">Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Conectar Celular (HTTPS / QR Code) -->
+  <div id="modal-qr" class="modal-backdrop" style="display: none;">
+    <div class="modal-card" style="max-width: 420px;">
+      <div class="modal-header">
+        <h3 style="display: flex; align-items: center; gap: 8px;">
+          <span>📱</span> Conectar Celular (HTTPS)
+        </h3>
+        <button id="btn-close-qr-modal" class="btn-icon">✕</button>
+      </div>
+      <div class="modal-body" style="text-align: center;">
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 14px; line-height: 1.4;">
+          O Android exige conexão <strong>HTTPS</strong> para liberar a câmera. Aponte a câmera do celular para o QR Code abaixo:
+        </p>
+
+        <div id="qr-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 220px; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 16px; margin-bottom: 14px; border: 1px dashed rgba(255,255,255,0.15);">
+          <div id="qr-loading-text" style="color: var(--accent-blue); font-size: 0.9rem;">
+            🔄 Gerando link seguro HTTPS...
+          </div>
+          <img id="qr-image" src="" alt="QR Code" style="display: none; width: 200px; height: 200px; border-radius: 8px; border: 4px solid white; background: white;" />
+        </div>
+
+        <div style="background: rgba(255,255,255,0.06); padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; word-break: break-all;">
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Link Direto (Cloudflare SSL):</div>
+          <a id="qr-link-anchor" href="#" target="_blank" style="color: var(--accent-green); font-weight: bold; font-size: 0.85rem; text-decoration: underline;">
+            Aguardando link...
+          </a>
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: center;">
+          <button id="btn-copy-qr-link" class="btn-primary" style="flex: 1; padding: 10px; font-size: 0.85rem;">
+            📋 Copiar Link
+          </button>
+          <button id="btn-refresh-tunnel" class="btn-secondary" style="flex: 1; padding: 10px; font-size: 0.85rem;">
+            🔄 Atualizar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.js?v=2.0.2"></script>
+</body>
+</html>
