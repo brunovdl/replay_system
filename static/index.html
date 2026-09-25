@@ -645,14 +645,9 @@ async function startNativeCamera() {
   try {
     if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); }
 
-    const isPortrait = window.innerHeight > window.innerWidth;
     const constraints = {
       video: {
-        facingMode: state.facingMode,
-        aspectRatio: { ideal: isPortrait ? 9/16 : 16/9 },
-        width:  { ideal: isPortrait ? 720 : 1280 },
-        height: { ideal: isPortrait ? 1280 : 720 },
-        frameRate: { ideal: 30 }
+        facingMode: state.facingMode
       },
       audio: false
     };
