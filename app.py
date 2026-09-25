@@ -251,6 +251,7 @@ async def api_status():
         "save_count":   buf.save_count,
         "camera_mode":  settings["camera_mode"],
         "ext_cam_ok":   _ext_cam_running,
+        "active_cams":  len(_active_ws_clients),
     })
 
 @app.get("/api/settings")

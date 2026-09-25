@@ -327,6 +327,9 @@
       <span id="rec-label" class="inactive">AGUARDANDO</span>
     </div>
     <span id="buffer-text">0.0 / 30s</span>
+    <button id="btn-mode-toggle" title="Alternar entre Câmera (Filmando) e Controle Remoto" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;cursor:pointer;">
+      <span id="mode-label">📹 Câmera</span>
+    </button>
     <span id="save-count-badge">0 replay(s)</span>
   </div>
   <div id="buffer-bar-wrap"><div id="buffer-bar"></div></div>
@@ -494,6 +497,8 @@ const $btnSaveSet    = document.getElementById('btn-save-settings');
 const $toast         = document.getElementById('toast');
 const $replaysList   = document.getElementById('replays-list');
 const $chipsDuration = document.getElementById('chips-duration');
+const $btnModeToggle = document.getElementById('btn-mode-toggle');
+const $modeLabel     = document.getElementById('mode-label');
 
 // ─── WebSocket & MediaRecorder ────────────────────────────────────────────────
 let ws = null;
@@ -546,7 +551,27 @@ function connectWS() {
   ws.onerror = () => ws.close();
 }
 
+// ─── Screen Wake Lock (Impede que a tela do celular apague ao filmar) ───────
+let wakeLock = null;
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      console.log('[WAKE] Tela travada para gravação contínua 24/7');
+    }
+  } catch (err) {
+    console.warn('[WAKE] Wake lock não ativado:', err);
+  }
+}
+
+document.addEventListener('visibilitychange', async () => {
+  if (wakeLock !== null && document.visibilityState === 'visible') {
+    await requestWakeLock();
+  }
+});
+
 async function startNativeCamera() {
+  requestWakeLock();
   if (!checkSecureContext()) {
     return;
   }
@@ -701,10 +726,14 @@ function updateUI(status) {
     ? `🟢 ${state.maxSecs}s (cheio)` 
     : `⏳ ${state.bufferSecs.toFixed(1)} / ${state.maxSecs}s`;
 
-  if (state.recording) {
+  if (state.recording || (status && status.active_cams > 0)) {
     $recDot.classList.remove('inactive');
     $recLabel.classList.remove('inactive');
-    $recLabel.textContent = 'REC';
+    $recLabel.textContent = state.isRemoteMode ? 'ONLINE' : 'REC';
+  } else {
+    $recDot.classList.add('inactive');
+    $recLabel.classList.add('inactive');
+    $recLabel.textContent = 'AGUARDANDO';
   }
 
   // Botão de replay
@@ -847,15 +876,41 @@ $toggleExtCam.addEventListener('change', () => {
   $extCamWrap.style.display = $toggleExtCam.checked ? 'block' : 'none';
 });
 
-$btnSaveSet.addEventListener('click', saveSettings);
+function toggleAppMode() {
+  state.isRemoteMode = !state.isRemoteMode;
+  if (state.isRemoteMode) {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      try { mediaRecorder.stop(); } catch(e){}
+    }
+    if (mediaStream) {
+      try { mediaStream.getTracks().forEach(t => t.stop()); } catch(e){}
+      mediaStream = null;
+    }
+    $camVideo.style.display = 'none';
+    $camMjpeg.style.display = 'none';
+    $camPlaceholder.style.display = 'flex';
+    if ($camPlaceholderText) {
+      $camPlaceholderText.innerHTML = `
+        <span style="color:#ffd166;font-weight:700;font-size:16px;display:block;margin-bottom:6px;">🎮 Modo Controle Remoto</span>
+        <span style="font-size:12px;line-height:1.5;color:var(--text-muted);display:block;padding:0 16px;max-width:320px;margin:0 auto;">
+          Este dispositivo está operando como acionador remoto.<br>A câmera principal no tripé grava continuamente na nuvem.
+        </span>
+      `;
+    }
+    if ($camPlaceholderAction) {
+      $camPlaceholderAction.style.display = 'none';
+    }
+    if ($modeLabel) $modeLabel.textContent = '🎮 Remoto';
+    showToast('🎮 Modo Controle Remoto ativado!');
+  } else {
+    if ($modeLabel) $modeLabel.textContent = '📹 Câmera';
+    startNativeCamera();
+  }
+}
 
-// Chips de duração
-$chipsDuration.addEventListener('click', (e) => {
-  const chip = e.target.closest('.chip');
-  if (!chip) return;
-  document.querySelectorAll('#chips-duration .chip').forEach(c => c.classList.remove('active'));
-  chip.classList.add('active');
-});
+if ($btnModeToggle) {
+  $btnModeToggle.addEventListener('click', toggleAppMode);
+}
 
 // ─── Init ────────────────────────────────────────────────────────────────────
 loadSettings();
