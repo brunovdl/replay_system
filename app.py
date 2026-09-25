@@ -212,6 +212,7 @@ async def camera_ws(ws: WebSocket):
         async for data in ws.iter_bytes():
             if is_first:
                 buf.set_init_chunk(data)
+                buf.push_chunk(data)
                 is_first = False
             else:
                 buf.push_chunk(data)

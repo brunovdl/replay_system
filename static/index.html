@@ -696,7 +696,10 @@ async function pollStatus() {
 function updateUI(status) {
   const pct = Math.min(state.bufferSecs / state.maxSecs, 1);
   $bufBar.style.width = (pct * 100) + '%';
-  $bufText.textContent = `${state.bufferSecs.toFixed(1)} / ${state.maxSecs}s`;
+  const isFull = state.bufferSecs >= (state.maxSecs - 0.5);
+  $bufText.textContent = isFull 
+    ? `🟢 ${state.maxSecs}s (cheio)` 
+    : `⏳ ${state.bufferSecs.toFixed(1)} / ${state.maxSecs}s`;
 
   if (state.recording) {
     $recDot.classList.remove('inactive');
@@ -705,7 +708,7 @@ function updateUI(status) {
   }
 
   // Botão de replay
-  const ready = state.bufferSecs >= 3;
+  const ready = state.bufferSecs >= 2.0;
   $btnReplay.classList.toggle('buffering', !ready && !state.saving);
   $btnReplay.classList.toggle('saving', state.saving);
 

@@ -108,7 +108,8 @@ class ReplayBuffer:
             self._last_chunk_at = now
             if self._first_chunk_at is None:
                 self._first_chunk_at = now
-            cutoff = now - self.max_seconds
+            # Mantém margem de segurança de max_seconds + 5.0s para evitar descarte prematuro de chunks
+            cutoff = now - (self.max_seconds + 5.0)
             while self._chunks and self._chunks[0][1] < cutoff:
                 self._chunks.popleft()
 
@@ -131,8 +132,8 @@ class ReplayBuffer:
             if not self._chunks:
                 _log("Buffer vazio — aguarde acumular vídeo.", RED)
                 return False
-            # Garante que apenas os chunks dentro da janela max_seconds sejam capturados
-            cutoff = now - self.max_seconds
+            # Captura a janela inteira de max_seconds dos chunks recentes
+            cutoff = now - (self.max_seconds + 1.0)
             valid_chunks = [c for c in self._chunks if c[1] >= cutoff]
             snapshot = valid_chunks if valid_chunks else list(self._chunks)
         self._last_save_at = now
@@ -164,12 +165,14 @@ class ReplayBuffer:
             ffmpeg_bin = get_ffmpeg_bin()
             _log(f"[FFMPEG] Convertendo via {os.path.basename(ffmpeg_bin)} (720p, max {target_duration:.1f}s, +faststart)...", CYAN)
 
-            # Comando otimizado:
-            # -t target_duration: limita a duração exata da saída (nunca excede max_seconds)
-            # -vf setpts=PTS-STARTPTS,scale=-2:720: reseta timestamps e limita resolução a 720p par
-            # -preset faster -crf 26 -maxrate 1800k: gera arquivo leve (~2 a 3MB) e codificação rápida
+            # Comando com suporte a resiliência de pacotes:
+            # -fflags +genpts+discardcorrupt: descarta frames parciais/incompletos no inicio do stream (elimina o quadriculado)
+            # -vf setpts=PTS-STARTPTS,scale=-2:720: reseta linha de tempo e ajusta resolução
+            # -t target_duration: garante o tempo configurado (ex: 15s)
             cmd = [
                 ffmpeg_bin, "-y",
+                "-fflags", "+genpts+discardcorrupt",
+                "-err_detect", "ignore_err",
                 "-i", webm_path,
                 "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100",
                 "-vf", "setpts=PTS-STARTPTS,scale=-2:720",
@@ -179,9 +182,9 @@ class ReplayBuffer:
                 "-level", "3.1",
                 "-pix_fmt", "yuv420p",
                 "-preset", "faster",
-                "-crf", "26",
-                "-maxrate", "1800k",
-                "-bufsize", "2500k",
+                "-crf", "25",
+                "-maxrate", "2000k",
+                "-bufsize", "3000k",
                 "-c:a", "aac",
                 "-b:a", "96k",
                 "-movflags", "+faststart",
