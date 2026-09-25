@@ -567,8 +567,9 @@ async function startNativeCamera() {
     const constraints = {
       video: {
         facingMode: state.facingMode,
-        width:  { ideal: 1280 },
-        height: { ideal: 720 }
+        width:  { ideal: 1280, max: 1280 },
+        height: { ideal: 720, max: 720 },
+        frameRate: { ideal: 30, max: 30 }
       },
       audio: false
     };
@@ -595,7 +596,11 @@ async function startNativeCamera() {
     connectWS();
     isFirstChunk = true;
 
-    mediaRecorder = new MediaRecorder(mediaStream, mime ? { mimeType: mime } : {});
+    // Bitrate de 1.5 Mbps: otimizado para celulares, reduzindo drasticamente o tamanho e uso de banda
+    const recOpts = { videoBitsPerSecond: 1500000 };
+    if (mime) recOpts.mimeType = mime;
+
+    mediaRecorder = new MediaRecorder(mediaStream, recOpts);
     mediaRecorder.ondataavailable = (e) => {
       if (e.data.size < 10) return;
       e.data.arrayBuffer().then(buf => {

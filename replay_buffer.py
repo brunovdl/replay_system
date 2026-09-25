@@ -131,11 +131,14 @@ class ReplayBuffer:
             if not self._chunks:
                 _log("Buffer vazio — aguarde acumular vídeo.", RED)
                 return False
-            snapshot = list(self._chunks)
+            # Garante que apenas os chunks dentro da janela max_seconds sejam capturados
+            cutoff = now - self.max_seconds
+            valid_chunks = [c for c in self._chunks if c[1] >= cutoff]
+            snapshot = valid_chunks if valid_chunks else list(self._chunks)
         self._last_save_at = now
         self.saving        = True
         self.save_count   += 1
-        _log(f"Replay #{self.save_count} iniciado! ({source}, {len(snapshot)} chunks)", CYAN)
+        _log(f"Replay #{self.save_count} iniciado! ({source}, {len(snapshot)} chunks, max {self.max_seconds}s)", CYAN)
         t = threading.Thread(target=self._do_save, args=(snapshot, source), daemon=True)
         t.start()
         return True
@@ -154,24 +157,33 @@ class ReplayBuffer:
                 for chunk_bytes, _ in snapshot:
                     f.write(chunk_bytes)
 
-            duration = snapshot[-1][1] - snapshot[0][1] if len(snapshot) > 1 else 0
-            _log(f"WebM bruto salvo ({duration:.1f}s) — {webm_path}", GREEN)
+            raw_duration = snapshot[-1][1] - snapshot[0][1] if len(snapshot) > 1 else float(self.max_seconds)
+            target_duration = min(float(self.max_seconds), max(raw_duration, 1.0))
+            _log(f"WebM bruto salvo ({raw_duration:.1f}s) — limitando saída a {target_duration:.1f}s", GREEN)
 
             ffmpeg_bin = get_ffmpeg_bin()
-            _log(f"[FFMPEG] Convertendo via {os.path.basename(ffmpeg_bin)} para H.264/AAC (+faststart)...", CYAN)
+            _log(f"[FFMPEG] Convertendo via {os.path.basename(ffmpeg_bin)} (720p, max {target_duration:.1f}s, +faststart)...", CYAN)
 
+            # Comando otimizado:
+            # -t target_duration: limita a duração exata da saída (nunca excede max_seconds)
+            # -vf setpts=PTS-STARTPTS,scale=-2:720: reseta timestamps e limita resolução a 720p par
+            # -preset faster -crf 26 -maxrate 1800k: gera arquivo leve (~2 a 3MB) e codificação rápida
             cmd = [
                 ffmpeg_bin, "-y",
                 "-i", webm_path,
                 "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100",
+                "-vf", "setpts=PTS-STARTPTS,scale=-2:720",
+                "-t", f"{target_duration:.2f}",
                 "-c:v", "libx264",
                 "-profile:v", "main",
                 "-level", "3.1",
                 "-pix_fmt", "yuv420p",
-                "-preset", "fast",
-                "-crf", "23",
+                "-preset", "faster",
+                "-crf", "26",
+                "-maxrate", "1800k",
+                "-bufsize", "2500k",
                 "-c:a", "aac",
-                "-b:a", "128k",
+                "-b:a", "96k",
                 "-movflags", "+faststart",
                 "-shortest",
                 mp4_path
@@ -181,7 +193,7 @@ class ReplayBuffer:
             try:
                 res = subprocess.run(cmd, capture_output=True, text=True, check=True)
                 conv_ok = True
-                _log(f"✔ [FFMPEG] MP4 compatível com WhatsApp criado: {mp4_path}", GREEN)
+                _log(f"✔ [FFMPEG] MP4 otimizado criado ({target_duration:.1f}s): {mp4_path}", GREEN)
                 try:
                     os.remove(webm_path)
                 except Exception:
@@ -192,7 +204,7 @@ class ReplayBuffer:
                 _log(f"✗ [FFMPEG] Erro na conversão para MP4: {e.stderr[:200] if e.stderr else e}", RED)
 
             if conv_ok and self.n8n_webhook_url:
-                self._send_to_n8n(mp4_path, duration, source)
+                self._send_to_n8n(mp4_path, target_duration, source)
             elif not conv_ok:
                 _log("✗ [AVISO] Vídeo não enviado ao WhatsApp porque a conversão MP4 H.264 falhou (evitando arquivo corrompido no app).", YELLOW)
 
