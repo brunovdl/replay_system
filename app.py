@@ -55,14 +55,30 @@ DEFAULT_SETTINGS = {
 }
 
 def load_settings() -> dict:
+    s = dict(DEFAULT_SETTINGS)
     if Path(SETTINGS_FILE).exists():
         try:
             with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
                 saved = json.load(f)
-            return {**DEFAULT_SETTINGS, **saved}
+            s.update(saved)
         except Exception:
             pass
-    return dict(DEFAULT_SETTINGS)
+
+    # Sobrescrita via Variáveis de Ambiente (Easypanel / Docker)
+    if os.environ.get("N8N_WEBHOOK_URL"):
+        s["n8n_webhook_url"] = os.environ["N8N_WEBHOOK_URL"].strip()
+    if os.environ.get("PORT"):
+        try:
+            s["server_port"] = int(os.environ["PORT"])
+        except ValueError:
+            pass
+    if os.environ.get("REPLAY_SECONDS"):
+        try:
+            s["replay_seconds"] = int(os.environ["REPLAY_SECONDS"])
+        except ValueError:
+            pass
+
+    return s
 
 def save_settings(s: dict):
     with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
