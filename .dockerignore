@@ -1,5 +1,12 @@
-# So mobile/ entra na imagem; o resto eh o sistema do PC
-*
-!mobile/requirements.txt
-!mobile/app.py
-!mobile/static/
+# O build so copia mobile/ (ver Dockerfile); isto apenas evita enviar peso morto
+.git
+.venv
+venv
+replays
+mobile/data
+**/__pycache__
+*.exe
+*.pt
+*.task
+*.mp4
+.env

@@ -16,8 +16,13 @@ COPY mobile/app.py .
 COPY mobile/static ./static
 
 ENV DATA_DIR=/data
+# Confia nos cabecalhos X-Forwarded-* do proxy do Easypanel (Traefik).
+# Via variavel (lida pelo uvicorn) para o "*" nao virar curinga do shell.
+ENV FORWARDED_ALLOW_IPS=*
 VOLUME /data
 EXPOSE 8000
 
-# PORT: o servico antigo (Replay 2.0) no Easypanel ja usava essa variavel
-CMD uvicorn app:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips "*"
+# PORT: o servico antigo (Replay 2.0) no Easypanel ja usava essa variavel.
+# exec: o uvicorn vira o processo principal e recebe o SIGTERM do deploy,
+# terminando os replays em andamento em vez de ser morto apos 10s.
+CMD exec uvicorn app:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers
