@@ -9,7 +9,7 @@ Há duas formas de rodar:
 |---|---|---|
 | Câmera | celular via Iriun, webcam ou câmera IP Xiaomi | qualquer câmera do celular (traseiras, frontal) |
 | Onde roda | PC na quadra | Chrome Android + servidor no Easypanel |
-| Gatilho | ESPAÇO ou braço levantado por 4s (YOLO) | botão na tela ou braço levantado por 4s (MediaPipe) |
+| Gatilho | ESPAÇO ou braço levantado por 4s (YOLO) | botão na tela ou braço levantado por 3s (MediaPipe) |
 | Internet | só para enviar o replay | 4G, envia só o clipe (~9 MB) |
 
 A versão celular está documentada em [`mobile/README.md`](mobile/README.md).

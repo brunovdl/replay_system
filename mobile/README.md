@@ -1,7 +1,7 @@
 # 📱 Replay Quadra — versão celular
 
 Replay usando **só o celular**. O celular filma e guarda os últimos 30s já
-comprimidos. Quando alguém aperta **REPLAY** ou **levanta o braço por 4s**, só o clipe (~9 MB) é enviado ao
+comprimidos. Quando alguém aperta **REPLAY** ou **levanta o braço por 3s**, só o clipe (~9 MB) é enviado ao
 servidor, que gera o MP4 do WhatsApp e encaminha ao n8n.
 
 ```
@@ -80,7 +80,7 @@ como o celular se comportou ao longo da partida.
 
 ### Gatilho por gesto
 
-Qualquer jogador que **mantenha o braço levantado por 4s** dispara o replay.
+Qualquer jogador que **mantenha o braço levantado por 3s** dispara o replay.
 O braço conta como levantado quando o pulso (ou o cotovelo) fica acima da
 cabeça. Com o jogador de costas, vale o pulso bem acima do ombro.
 
