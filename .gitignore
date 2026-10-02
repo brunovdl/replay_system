@@ -1,26 +1,31 @@
-# Python & Virtualenv
+# ── Segredos e dados locais (NUNCA versionar: repositorio publico) ──
+.env
+# go2rtc.yaml contem o token da camera Xiaomi (use go2rtc.example.yaml)
+go2rtc.yaml
+# MAC e IP da camera, gerado pelo launcher
+camera_config.json
+
+# ── Videos gerados ──
+replays/
+mobile/data/
+*.mp4
+*.h264
+
+# ── Binarios e modelos (o YOLO baixa o modelo sozinho na 1a execucao) ──
+*.exe
+*.pt
+*.task
+
+# ── Python ──
 .venv/
 venv/
-env/
 __pycache__/
 *.py[cod]
-*$py.class
+.pytest_cache/
 
-# Binaries & Downloads
-cloudflared.exe
-*.exe
-
-# Temporary files & video jobs
-scratch/
-temp_jobs/
-*.mp4
-*.webm
-
-# Environment variables
-.env
-backend/.env
-
-# Editor & OS
+# ── Editor / SO / ferramentas ──
+.agent/
+.claude/
 .vscode/
 .idea/
 Thumbs.db

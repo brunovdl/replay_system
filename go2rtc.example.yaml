@@ -1,0 +1,14 @@
+# Copie para go2rtc.yaml e preencha com os dados da sua camera Xiaomi.
+# O go2rtc.yaml fica fora do git porque contem o token da conta Xiaomi.
+api:
+  listen: ":1984"
+
+rtsp:
+  listen: ":8554"
+
+xiaomi:
+  "SEU_USER_ID": V1:SEU_TOKEN_XIAOMI
+
+streams:
+  camera:
+    - xiaomi://SEU_USER_ID:us@192.168.1.100?did=SEU_DEVICE_ID&model=SEU_MODELO

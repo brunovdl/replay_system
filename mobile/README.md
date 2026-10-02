@@ -1,0 +1,99 @@
+# 📱 Replay Quadra — versão celular (Fase 1)
+
+Replay usando **só o celular**. O celular filma e guarda os últimos 30s já
+comprimidos. Quando alguém aperta **REPLAY**, só o clipe (~9 MB) é enviado ao
+servidor, que gera o MP4 do WhatsApp e encaminha ao n8n.
+
+```
+Celular (Chrome Android)                          Easypanel (este container)
+  câmera → H.264 do hardware → buffer 30s  ──clipe──>  ffmpeg → MP4 do zap ──> n8n ──> WhatsApp
+```
+
+O sistema do PC (`../replay_cam.py`) continua funcionando normalmente.
+
+---
+
+## 🚀 Deploy no Easypanel
+
+O `Dockerfile` fica na **raiz** do repositório, como no antigo Replay 2.0.
+
+1. **Serviço:**
+   - Se o serviço do Replay 2.0 já existe no Easypanel, use o mesmo e só faça
+     *Deploy* de novo.
+   - Senão, vá no projeto → *+ Service* → *App* → GitHub `brunovdl/replay_system`,
+     branch `main`, Build Path `/`, tipo *Dockerfile*.
+2. **Variáveis de ambiente** (aba *Environment*):
+
+   | Variável | Valor |
+   |---|---|
+   | `REPLAY_TOKEN` | **nova**: uma senha forte, pedida na tela do celular |
+   | `N8N_WEBHOOK_URL` | URL do webhook do n8n. A `WEBHOOK_URL` do serviço antigo também funciona |
+   | `KEEP_DAYS` | `7` (apaga replays antigos do servidor) |
+
+3. **Volume** (aba *Mounts*): volume montado em **`/data`**. Sem ele, os
+   replays e a telemetria somem a cada deploy.
+4. **Domínio** (aba *Domains*): porta **8000**, com HTTPS. O Chrome **só libera
+   a câmera em HTTPS**.
+5. Abra `https://<seu-domínio>/api/health`. Deve responder
+   `{"ok":true,"ffmpeg":true,"n8n":true,"senha":true}`.
+
+O webhook do n8n recebe **exatamente os mesmos campos** que o PC envia hoje
+(`file`, `duracao`, `evento`), então o fluxo do n8n não muda. O `evento` vem
+como `botao`.
+
+---
+
+## 📲 Uso no celular
+
+1. Abra o domínio no **Chrome** → digite a senha → **Começar a filmar**.
+2. Permita a câmera. A página entra em tela cheia, deitada.
+3. Opcional: menu ⋮ → *Adicionar à tela inicial*, para abrir como app.
+4. Espere a barra do buffer ficar verde (30s) e toque em **REPLAY**.
+5. Acompanhe o envio no canto inferior esquerdo:
+   *enviando → gerando vídeo → ✔ Enviado para o WhatsApp*.
+
+⚠️ **A página precisa ficar aberta e na frente.** Se trocar de app ou bloquear
+a tela, a câmera pausa. A tela fica ligada sozinha (Wake Lock).
+
+---
+
+## 🧪 Teste de campo (objetivo da Fase 1)
+
+Leve o celular no tripé, **ligado no power bank**, e filme uma partida inteira.
+
+| Verificar | Onde ver | Bom sinal |
+|---|---|---|
+| FPS estável | barra do topo | ~30 fps (aceitável ≥ 24) |
+| Frames descartados | barra do topo (só aparece se houver) | zero ou quase |
+| Bateria | barra do topo | sobe ou se mantém no power bank |
+| Aquecimento | mão no celular | morno, sem aviso de temperatura |
+| Envio no 4G | lista de envios | ✔ em menos de ~1 min |
+| Qualidade | vídeo no WhatsApp | dá para ver a jogada |
+
+A cada minuto, a página registra fps, bateria e descartes em
+`/data/telemetria.jsonl` no servidor. Depois do teste, esse arquivo mostra
+como o celular se comportou ao longo da partida.
+
+### Ajustes rápidos (topo de `static/app.js`, em `CFG`)
+
+- `BITRATE`: 2,5 Mbps por padrão. Se o vídeo ficar borrado, use 4 Mbps (clipe
+  de ~15 MB). Se o envio no 4G ficar lento, use 1,5 Mbps.
+- `REPLAY_SECONDS`: duração do replay.
+- `WIDTH`/`HEIGHT`: 1280x720 por padrão.
+
+---
+
+## Próximas fases
+
+- **Fase 3:** gesto do braço levantado rodando no celular (MediaPipe Pose).
+- **Fase 4:** fila offline persistente (o clipe sobrevive mesmo se a página
+  recarregar), tela de status e QR code para abrir a página.
+
+## Arquivos
+
+| Arquivo | Papel |
+|---|---|
+| `app.py` | servidor FastAPI: recebe o clipe, ffmpeg, envia ao n8n, telemetria |
+| `static/app.js` | captura, codificação H.264, buffer de 30s, envio com novas tentativas |
+| `static/index.html` | interface (tela inicial + filmagem) |
+| `../Dockerfile` | imagem com Python + ffmpeg, para o Easypanel (fica na raiz) |

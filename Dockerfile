@@ -1,30 +1,23 @@
-FROM python:3.11-slim
+# Servidor do Replay Quadra (versao celular) — usado pelo Easypanel.
+# Fica na raiz para o servico existente no Easypanel continuar buildando sem mudar config.
+FROM python:3.12-slim
 
-# Evita prompts interativos durante instalação de pacotes
-ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
 
-# Instala FFmpeg e dependências de sistema essenciais
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ffmpeg \
-    ca-certificates \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# ffmpeg com libx264 (gera o MP4 compativel com WhatsApp)
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ffmpeg \
+ && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+COPY mobile/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY mobile/app.py .
+COPY mobile/static ./static
 
-# Instala dependências Python primeiro (aproveita cache de build do Docker)
-COPY backend/requirements.txt /app/backend/requirements.txt
-RUN pip install --no-cache-dir -r /app/backend/requirements.txt
-
-# Copia código do backend e frontend
-COPY backend/ /app/backend/
-COPY frontend/ /app/frontend/
-
-# Cria pasta para temporários
-RUN mkdir -p /app/scratch/temp_jobs
-
+ENV DATA_DIR=/data
+VOLUME /data
 EXPOSE 8000
 
-# Executa o servidor FastAPI com Uvicorn
-CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# PORT: o servico antigo (Replay 2.0) no Easypanel ja usava essa variavel
+CMD uvicorn app:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips "*"

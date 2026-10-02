@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <title>Replay Quadra</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    :root {
+      --bg: #000;
+      --fg: #f2f2f2;
+      --muted: #9aa0a6;
+      --panel: rgba(0, 0, 0, .55);
+      --accent: #ff3b30;
+      --ok: #34c759;
+      --warn: #ffcc00;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; height: 100%; background: var(--bg); color: var(--fg);
+      font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      overflow: hidden; -webkit-tap-highlight-color: transparent; user-select: none;
+    }
+    .hidden { display: none !important; }
+
+    /* ── Tela inicial ── */
+    #inicio {
+      position: fixed; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 14px; padding: 24px; text-align: center;
+    }
+    #inicio h1 { margin: 0; font-size: 26px; }
+    #inicio p { margin: 0; color: var(--muted); max-width: 420px; }
+    #inicio input {
+      width: min(320px, 100%); padding: 14px; border-radius: 12px; border: 1px solid #333;
+      background: #111; color: var(--fg); font-size: 17px; text-align: center;
+    }
+    #btn-comecar {
+      width: min(320px, 100%); padding: 16px; border: 0; border-radius: 12px;
+      background: var(--accent); color: #fff; font-size: 18px; font-weight: 700;
+    }
+    #btn-comecar:disabled { opacity: .5; }
+    #erro-inicio { color: var(--accent); min-height: 1.4em; max-width: 420px; }
+
+    /* ── Filmagem ── */
+    #filmagem { position: fixed; inset: 0; }
+    video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+
+    #barra {
+      position: absolute; top: 0; left: 0; right: 0; padding: 8px 12px;
+      padding-top: max(8px, env(safe-area-inset-top));
+      background: var(--panel); font-size: 13px; display: flex; flex-wrap: wrap; gap: 4px 14px;
+    }
+    #barra b { font-variant-numeric: tabular-nums; }
+    #buffer-trilho { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: #333; }
+    #buffer-nivel { height: 100%; width: 0; background: var(--ok); transition: width .5s; }
+
+    #btn-replay {
+      position: absolute; right: max(20px, env(safe-area-inset-right)); bottom: 28px;
+      width: 120px; height: 120px; border-radius: 50%; border: 5px solid #fff;
+      background: var(--accent); color: #fff; font-size: 17px; font-weight: 800; letter-spacing: .5px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, .5);
+    }
+    #btn-replay:active { transform: scale(.94); }
+    #btn-replay:disabled { opacity: .45; }
+
+    #envios {
+      position: absolute; left: 12px; bottom: 16px; width: min(360px, calc(100% - 170px));
+      display: flex; flex-direction: column-reverse; gap: 6px; font-size: 13px;
+    }
+    .envio { background: var(--panel); border-radius: 10px; padding: 7px 10px; }
+    .envio.ok { border-left: 4px solid var(--ok); }
+    .envio.erro { border-left: 4px solid var(--accent); }
+    .envio.andamento { border-left: 4px solid var(--warn); }
+
+    #aviso {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, .8); padding: 18px 26px; border-radius: 14px;
+      font-size: 22px; font-weight: 700; text-align: center; pointer-events: none;
+    }
+    #flash { position: absolute; inset: 0; border: 10px solid var(--ok); pointer-events: none; opacity: 0; transition: opacity .3s; }
+    #flash.on { opacity: 1; transition: none; }
+  </style>
+</head>
+<body>
+  <section id="inicio">
+    <h1>🏐 Replay Quadra</h1>
+    <p>Prenda o celular de pé no tripé, ligado no power bank. A tela precisa ficar aberta enquanto filma.</p>
+    <input id="senha" type="password" placeholder="Senha" autocomplete="current-password">
+    <button id="btn-comecar">Começar a filmar</button>
+    <div id="erro-inicio"></div>
+  </section>
+
+  <section id="filmagem" class="hidden">
+    <video id="preview" autoplay muted playsinline></video>
+    <div id="barra">
+      <span>Buffer <b id="st-buffer">0</b>s</span>
+      <span><b id="st-fps">0</b> fps</span>
+      <span><b id="st-res">—</b></span>
+      <span>Memória <b id="st-mem">0</b> MB</span>
+      <span>Bateria <b id="st-bat">—</b></span>
+      <span>Filmando há <b id="st-tempo">0:00</b></span>
+      <span id="st-descartes" class="hidden">Descartados <b id="st-desc">0</b></span>
+      <div id="buffer-trilho"><div id="buffer-nivel"></div></div>
+    </div>
+    <div id="envios"></div>
+    <button id="btn-replay">REPLAY</button>
+    <div id="aviso" class="hidden"></div>
+    <div id="flash"></div>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>

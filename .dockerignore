@@ -1,13 +1,5 @@
-.git
-.gitignore
-.venv
-venv
-__pycache__
-*.pyc
-scratch/
-temp_jobs/
-cloudflared.exe
-*.mp4
-*.webm
-.env
-backend/.env
+# So mobile/ entra na imagem; o resto eh o sistema do PC
+*
+!mobile/requirements.txt
+!mobile/app.py
+!mobile/static/
