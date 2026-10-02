@@ -1,7 +1,7 @@
-# 📱 Replay Quadra — versão celular (Fase 1)
+# 📱 Replay Quadra — versão celular
 
 Replay usando **só o celular**. O celular filma e guarda os últimos 30s já
-comprimidos. Quando alguém aperta **REPLAY**, só o clipe (~9 MB) é enviado ao
+comprimidos. Quando alguém aperta **REPLAY** ou **levanta o braço por 4s**, só o clipe (~9 MB) é enviado ao
 servidor, que gera o MP4 do WhatsApp e encaminha ao n8n.
 
 ```
@@ -78,6 +78,25 @@ A cada minuto, a página registra fps, bateria e descartes em
 `/data/telemetria.jsonl` no servidor. Depois do teste, esse arquivo mostra
 como o celular se comportou ao longo da partida.
 
+### Gatilho por gesto
+
+Qualquer jogador que **mantenha o braço levantado por 4s** dispara o replay.
+O braço conta como levantado quando o pulso (ou o cotovelo) fica acima da
+cabeça. Com o jogador de costas, vale o pulso bem acima do ombro.
+
+- **Bipe curto + vibração:** o hold começou. Uma contagem grande aparece na tela.
+- **Dois bipes + borda verde:** replay disparado.
+- Falhas de detecção de até 1s não cancelam a contagem. Depois de cada
+  disparo há 5s de pausa.
+- A detecção roda **no celular** (MediaPipe Pose, na GPU), 5 vezes por
+  segundo. Na primeira vez, o celular baixa ~18 MB, que depois ficam no cache.
+- **🙋 Gesto: ON/OFF** liga e desliga o gesto. O botão REPLAY sempre funciona.
+- A barra do topo mostra quantas pessoas o detector está vendo. Se ficar em
+  0 com gente na quadra, a câmera está longe ou baixa demais.
+
+Ajustes no topo de `static/gesto.js` (`GESTO`): `HOLD_SECS` (tempo do hold),
+`GRACE_SECS`, `COOLDOWN_SECS`, `FPS`, `VISIBILIDADE`.
+
 ### Ajustes rápidos (topo de `static/app.js`, em `CFG`)
 
 - `BITRATE`: 2,5 Mbps por padrão. Se o vídeo ficar borrado, use 4 Mbps (clipe
@@ -89,7 +108,6 @@ como o celular se comportou ao longo da partida.
 
 ## Próximas fases
 
-- **Fase 3:** gesto do braço levantado rodando no celular (MediaPipe Pose).
 - **Fase 4:** fila offline persistente (o clipe sobrevive mesmo se a página
   recarregar), tela de status e QR code para abrir a página.
 
@@ -98,6 +116,7 @@ como o celular se comportou ao longo da partida.
 | Arquivo | Papel |
 |---|---|
 | `app.py` | servidor FastAPI: recebe o clipe, ffmpeg, envia ao n8n, telemetria |
-| `static/app.js` | captura, codificação H.264, buffer de 30s, envio com novas tentativas |
+| `static/app.js` | captura, codificação H.264, buffer de 30s, troca de câmera, envio com novas tentativas |
+| `static/gesto.js` | gesto do braço levantado: MediaPipe Pose, regra e contagem do hold |
 | `static/index.html` | interface (tela inicial + filmagem) |
 | `../Dockerfile` | imagem com Python + ffmpeg, para o Easypanel (fica na raiz) |

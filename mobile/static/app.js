@@ -49,6 +49,13 @@ const estado = {
   deviceId: "",        // câmera em uso
   reader: null,        // leitor de frames do track atual
   geracao: 0,          // incrementa a cada troca de câmera (encerra o loop antigo)
+  gesto: {
+    ligado: true,      // preferência salva no celular (botão "Gesto")
+    status: "—",       // carregando | ativo | indisponível
+    maquina: null,
+    pessoas: 0,
+    ms: 0,             // tempo da última detecção (telemetria)
+  },
 };
 
 // ─────────────────────────────────────────────
@@ -492,6 +499,69 @@ function dispararReplay(origem = "botao") {
 }
 
 // ─────────────────────────────────────────────
+//  Gatilho por gesto (detecção em gesto.js)
+// ─────────────────────────────────────────────
+function iniciarGesto() {
+  const g = estado.gesto;
+  g.maquina = new MaquinaHold({
+    aoIniciar: () => {
+      bipe([[900, 120]]);              // bipe curto = começou a contar
+      navigator.vibrate?.(60);
+    },
+    aoDisparar: () => dispararReplay("gesto"),
+  });
+  g.status = "carregando…";
+  carregarDetectorPose()
+    .then(({ detector, delegate }) => {
+      g.status = `ativo${delegate === "CPU" ? " (CPU)" : ""}`;
+      iniciarLoopGesto($("preview"), detector, g.maquina, {
+        deveRodar: () => g.ligado,
+        aoResultado: (r) => {
+          g.pessoas = r.pessoas;
+          g.ms = r.ms;
+        },
+      });
+    })
+    .catch((e) => {
+      console.error(e);
+      g.status = "indisponível";
+      aviso("Gesto indisponível (sem internet para baixar o detector?). Use o botão.", 4000);
+    });
+  setInterval(atualizarContagem, 100);
+}
+
+function atualizarContagem() {
+  const m = estado.gesto.maquina;
+  const agora = performance.now() / 1000;
+  const p = estado.gesto.ligado && m ? m.progresso(agora) : null;
+  const el = $("contagem");
+  if (p === null) {
+    el.classList.add("hidden");
+    return;
+  }
+  el.classList.remove("hidden");
+  $("contagem-num").textContent = Math.ceil(m.restante(agora)) || 1;
+  $("contagem-nivel").style.width = `${p * 100}%`;
+}
+
+function alternarGesto() {
+  const g = estado.gesto;
+  g.ligado = !g.ligado;
+  if (!g.ligado && g.maquina) {
+    g.maquina.inicioHold = 0;   // cancela um hold em andamento
+    g.maquina.disparou = false;
+  }
+  try { localStorage.setItem("replay_gesto", g.ligado ? "1" : "0"); } catch {}
+  atualizarBotaoGesto();
+}
+
+function atualizarBotaoGesto() {
+  const btn = $("btn-gesto");
+  btn.textContent = `🙋 Gesto: ${estado.gesto.ligado ? "ON" : "OFF"}`;
+  btn.classList.toggle("desligado", !estado.gesto.ligado);
+}
+
+// ─────────────────────────────────────────────
 //  Painel de status + telemetria do teste de campo
 // ─────────────────────────────────────────────
 function atualizarPainel() {
@@ -511,6 +581,10 @@ function atualizarPainel() {
   }
   const b = estado.bateria;
   if (b) $("st-bat").textContent = `${Math.round(b.level * 100)}%${b.charging ? " ⚡" : ""}`;
+  const g = estado.gesto;
+  $("st-gesto").textContent = !g.ligado ? "desligado"
+    : g.status.startsWith("ativo") ? `${g.status} · ${g.pessoas} pessoa${g.pessoas === 1 ? "" : "s"}`
+    : g.status;
 }
 
 function enviarTelemetria() {
@@ -524,6 +598,9 @@ function enviarTelemetria() {
     codec: estado.codec,
     resolucao: `${estado.largura}x${estado.altura}`,
     buffer_mb: estado.bytes / 1e6,
+    gesto: estado.gesto.ligado ? estado.gesto.status : "desligado",
+    gesto_ms: Math.round(estado.gesto.ms),
+    pessoas: estado.gesto.pessoas,
   };
   api("/api/telemetria", {
     method: "POST",
@@ -575,7 +652,7 @@ async function comecar() {
     estado.inicio = Date.now();
     setInterval(atualizarPainel, 1000);
     setInterval(enviarTelemetria, CFG.TELEMETRIA_SECS * 1000);
-    bipe([[900, 120]]);
+    iniciarGesto();   // carrega em segundo plano; a filmagem já está rodando
   } catch (e) {
     erro.textContent = e.name === "NotAllowedError" ? "Permita o acesso à câmera para continuar." : e.message;
     btn.disabled = false;
@@ -590,6 +667,9 @@ document.addEventListener("visibilitychange", () => {
 $("btn-comecar").addEventListener("click", comecar);
 $("btn-replay").addEventListener("click", () => dispararReplay("botao"));
 $("btn-camera").addEventListener("click", abrirSeletorCameras);
+$("btn-gesto").addEventListener("click", alternarGesto);
+try { estado.gesto.ligado = localStorage.getItem("replay_gesto") !== "0"; } catch {}
+atualizarBotaoGesto();
 $("btn-fechar-cameras").addEventListener("click", fecharSeletorCameras);
 $("senha").addEventListener("keydown", (e) => e.key === "Enter" && comecar());
 try { $("senha").value = localStorage.getItem("replay_token") || ""; } catch {}

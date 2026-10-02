@@ -79,11 +79,24 @@
       background: rgba(0, 0, 0, .8); padding: 18px 26px; border-radius: 14px;
       font-size: 22px; font-weight: 700; text-align: center; pointer-events: none;
     }
-    #btn-camera {
+    #btn-camera, #btn-gesto {
       position: absolute; right: max(20px, env(safe-area-inset-right)); bottom: 168px;
       padding: 10px 16px; border-radius: 22px; border: 1px solid rgba(255, 255, 255, .35);
       background: var(--panel); color: var(--fg); font-size: 15px; font-weight: 600;
     }
+    #btn-gesto { bottom: 220px; }
+    #btn-gesto.desligado { opacity: .55; text-decoration: line-through; }
+
+    /* Contagem do hold: grande o bastante para ser vista de longe */
+    #contagem {
+      position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      pointer-events: none; text-shadow: 0 3px 12px rgba(0, 0, 0, .8);
+    }
+    #contagem-num { font-size: 140px; font-weight: 900; line-height: 1; color: var(--warn); }
+    #contagem-texto { font-size: 20px; font-weight: 700; }
+    #contagem-trilho { width: 260px; height: 14px; border-radius: 7px; background: rgba(0, 0, 0, .55); overflow: hidden; }
+    #contagem-nivel { height: 100%; width: 0; background: var(--warn); }
     #seletor-cameras {
       position: absolute; inset: 0; background: rgba(0, 0, 0, .6);
       display: flex; align-items: center; justify-content: center; padding: 16px;
@@ -128,10 +141,17 @@
       <span>Memória <b id="st-mem">0</b> MB</span>
       <span>Bateria <b id="st-bat">—</b></span>
       <span>Filmando há <b id="st-tempo">0:00</b></span>
+      <span>Gesto <b id="st-gesto">—</b></span>
       <span id="st-descartes" class="hidden">Descartados <b id="st-desc">0</b></span>
       <div id="buffer-trilho"><div id="buffer-nivel"></div></div>
     </div>
     <div id="envios"></div>
+    <div id="contagem" class="hidden">
+      <div id="contagem-num">4</div>
+      <div id="contagem-texto">Segure o braço levantado…</div>
+      <div id="contagem-trilho"><div id="contagem-nivel"></div></div>
+    </div>
+    <button id="btn-gesto">🙋 Gesto: ON</button>
     <button id="btn-camera" aria-label="Trocar câmera">📷 Câmera</button>
     <button id="btn-replay">REPLAY</button>
     <div id="aviso" class="hidden"></div>
@@ -147,6 +167,7 @@
     </div>
   </section>
 
+  <script src="gesto.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
