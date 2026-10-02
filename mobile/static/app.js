@@ -46,6 +46,9 @@ const estado = {
   audio: null,
   wakeLock: null,
   bateria: null,
+  deviceId: "",        // câmera em uso
+  reader: null,        // leitor de frames do track atual
+  geracao: 0,          // incrementa a cada troca de câmera (encerra o loop antigo)
 };
 
 // ─────────────────────────────────────────────
@@ -204,12 +207,17 @@ async function configurarEncoder(largura, altura) {
 // ─────────────────────────────────────────────
 //  Captura
 // ─────────────────────────────────────────────
-async function lerFrames(track) {
+async function lerFrames(track, geracao) {
   const reader = new MediaStreamTrackProcessor({ track }).readable.getReader();
+  estado.reader = reader;
   let configurando = null;
   for (;;) {
     const { value: frame, done } = await reader.read();
     if (done) break;
+    if (geracao !== estado.geracao) {   // câmera trocada: este loop é de um track antigo
+      frame.close();
+      break;
+    }
     try {
       const w = frame.displayWidth, h = frame.displayHeight;
       if (!estado.encoder || w !== estado.largura || h !== estado.altura) {
@@ -242,24 +250,136 @@ async function pedirWakeLock() {
   }
 }
 
-async function iniciarCamera() {
-  estado.stream = await navigator.mediaDevices.getUserMedia({
-    audio: false,
-    video: {
-      facingMode: { ideal: "environment" },
-      width: { ideal: CFG.WIDTH },
-      height: { ideal: CFG.HEIGHT },
-      frameRate: { ideal: CFG.FPS },
-    },
-  });
-  const track = estado.stream.getVideoTracks()[0];
-  $("preview").srcObject = estado.stream;
+async function abrirStream(deviceId) {
+  const video = {
+    width: { ideal: CFG.WIDTH },
+    height: { ideal: CFG.HEIGHT },
+    frameRate: { ideal: CFG.FPS },
+  };
+  if (deviceId) video.deviceId = { exact: deviceId };
+  else video.facingMode = { ideal: "environment" };
+  return navigator.mediaDevices.getUserMedia({ audio: false, video });
+}
+
+/** Abre a câmera (a salva na última vez, ou a traseira) e começa a gravar o buffer. */
+async function iniciarCamera(deviceId = lerPreferencia()) {
+  let stream;
+  try {
+    stream = await abrirStream(deviceId);
+  } catch (e) {
+    // Câmera salva não existe mais (ou foi recusada): volta para a traseira padrão
+    if (!deviceId || e.name === "NotAllowedError") throw e;
+    stream = await abrirStream(null);
+  }
+  estado.stream = stream;
+  const track = stream.getVideoTracks()[0];
+  estado.deviceId = track.getSettings().deviceId || "";
+  const frontal = (track.getSettings().facingMode || "") === "user";
+  const preview = $("preview");
+  preview.srcObject = stream;
+  // Espelha só o preview da frontal (como um espelho); o vídeo gravado não é espelhado
+  preview.style.transform = frontal ? "scaleX(-1)" : "";
 
   track.addEventListener("ended", () => aviso("A câmera foi desligada. Recarregue a página.", 0));
   track.addEventListener("mute", () => aviso("Câmera pausada — mantenha esta tela aberta", 0));
   track.addEventListener("unmute", () => $("aviso").classList.add("hidden"));
 
-  lerFrames(track).catch((e) => aviso("Falha na captura: " + e.message, 0));
+  const geracao = ++estado.geracao;
+  lerFrames(track, geracao).catch((e) => {
+    if (geracao === estado.geracao) aviso("Falha na captura: " + e.message, 0);
+  });
+}
+
+// ─────────────────────────────────────────────
+//  Troca de câmera
+// ─────────────────────────────────────────────
+function lerPreferencia() {
+  try { return localStorage.getItem("replay_camera") || null; } catch { return null; }
+}
+
+function salvarPreferencia(deviceId) {
+  try { localStorage.setItem("replay_camera", deviceId); } catch {}
+}
+
+/** Lista as câmeras com nomes legíveis. Os nomes reais só aparecem depois da permissão. */
+async function listarCameras() {
+  const dispositivos = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput");
+  const contagem = { traseira: 0, frontal: 0, outra: 0 };
+  return dispositivos.map((d) => {
+    const rotulo = d.label.toLowerCase();
+    const tipo = /front|user|frontal/.test(rotulo) ? "frontal" : /back|rear|environment|traseira/.test(rotulo) ? "traseira" : "outra";
+    contagem[tipo]++;
+    return { deviceId: d.deviceId, label: d.label, tipo, numero: contagem[tipo] };
+  }).map((c) => {
+    const base = { traseira: "Traseira", frontal: "Frontal", outra: "Câmera" }[c.tipo];
+    // Numera só quando há mais de uma do mesmo tipo (ex.: traseira principal + grande-angular)
+    return { ...c, nome: contagem[c.tipo] > 1 ? `${base} ${c.numero}` : base };
+  });
+}
+
+async function abrirSeletorCameras() {
+  const lista = $("lista-cameras");
+  lista.innerHTML = "";
+  let cameras = [];
+  try {
+    cameras = await listarCameras();
+  } catch (e) {
+    aviso("Não foi possível listar as câmeras");
+    return;
+  }
+  for (const cam of cameras) {
+    const btn = document.createElement("button");
+    btn.className = "opcao-camera" + (cam.deviceId === estado.deviceId ? " atual" : "");
+    btn.innerHTML = `<b></b><small></small>`;
+    btn.querySelector("b").textContent = cam.nome + (cam.deviceId === estado.deviceId ? " ✓" : "");
+    btn.querySelector("small").textContent = cam.label || "sem nome";
+    btn.addEventListener("click", () => {
+      fecharSeletorCameras();
+      if (cam.deviceId !== estado.deviceId) trocarCamera(cam.deviceId, cam.nome);
+    });
+    lista.appendChild(btn);
+  }
+  if (cameras.length <= 1) {
+    const p = document.createElement("p");
+    p.textContent = "O navegador só expõe esta câmera neste celular.";
+    lista.appendChild(p);
+  }
+  $("seletor-cameras").classList.remove("hidden");
+}
+
+function fecharSeletorCameras() {
+  $("seletor-cameras").classList.add("hidden");
+}
+
+async function trocarCamera(deviceId, nome) {
+  const btnReplay = $("btn-replay");
+  btnReplay.disabled = true;
+  aviso(`Trocando para ${nome}…`, 0);
+  try {
+    // Encerra o track e o loop antigos antes de abrir o novo: muitos celulares
+    // não abrem duas câmeras ao mesmo tempo
+    estado.geracao++;
+    try { await estado.reader?.cancel(); } catch {}
+    estado.stream?.getTracks().forEach((t) => t.stop());
+    if (estado.encoder && estado.encoder.state !== "closed") estado.encoder.close();
+    estado.encoder = null;
+    // Buffer recomeça: trechos de câmeras diferentes não formam um vídeo válido
+    estado.chunks = [];
+    estado.bytes = 0;
+    estado.paramSets = null;
+    estado.largura = 0;
+    estado.altura = 0;
+
+    await iniciarCamera(deviceId);
+    salvarPreferencia(estado.deviceId);
+    aviso(`${nome} — buffer reiniciado`, 2500);
+  } catch (e) {
+    console.error(e);
+    aviso("Não foi possível abrir essa câmera. Voltando para a traseira…", 3000);
+    try { await iniciarCamera(null); } catch (e2) { aviso("Falha ao reabrir a câmera: " + e2.message, 0); }
+  } finally {
+    btnReplay.disabled = false;
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -469,5 +589,7 @@ document.addEventListener("visibilitychange", () => {
 
 $("btn-comecar").addEventListener("click", comecar);
 $("btn-replay").addEventListener("click", () => dispararReplay("botao"));
+$("btn-camera").addEventListener("click", abrirSeletorCameras);
+$("btn-fechar-cameras").addEventListener("click", fecharSeletorCameras);
 $("senha").addEventListener("keydown", (e) => e.key === "Enter" && comecar());
 try { $("senha").value = localStorage.getItem("replay_token") || ""; } catch {}

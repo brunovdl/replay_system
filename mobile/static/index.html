@@ -79,6 +79,33 @@
       background: rgba(0, 0, 0, .8); padding: 18px 26px; border-radius: 14px;
       font-size: 22px; font-weight: 700; text-align: center; pointer-events: none;
     }
+    #btn-camera {
+      position: absolute; right: max(20px, env(safe-area-inset-right)); bottom: 168px;
+      padding: 10px 16px; border-radius: 22px; border: 1px solid rgba(255, 255, 255, .35);
+      background: var(--panel); color: var(--fg); font-size: 15px; font-weight: 600;
+    }
+    #seletor-cameras {
+      position: absolute; inset: 0; background: rgba(0, 0, 0, .6);
+      display: flex; align-items: center; justify-content: center; padding: 16px;
+    }
+    #seletor-cameras .caixa {
+      background: #151515; border-radius: 16px; padding: 16px 18px; width: min(420px, 100%);
+      max-height: 100%; overflow-y: auto;
+    }
+    #seletor-cameras h2 { margin: 0 0 4px; font-size: 18px; }
+    #seletor-cameras .nota { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+    #lista-cameras { display: flex; flex-direction: column; gap: 8px; }
+    .opcao-camera {
+      display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left;
+      padding: 12px 14px; border-radius: 12px; border: 1px solid #333; background: #222; color: var(--fg);
+    }
+    .opcao-camera b { font-size: 16px; }
+    .opcao-camera small { color: var(--muted); font-size: 12px; }
+    .opcao-camera.atual { border-color: var(--ok); }
+    #btn-fechar-cameras {
+      margin-top: 12px; width: 100%; padding: 12px; border-radius: 12px; border: 0;
+      background: #333; color: var(--fg); font-size: 15px;
+    }
     #flash { position: absolute; inset: 0; border: 10px solid var(--ok); pointer-events: none; opacity: 0; transition: opacity .3s; }
     #flash.on { opacity: 1; transition: none; }
   </style>
@@ -105,9 +132,19 @@
       <div id="buffer-trilho"><div id="buffer-nivel"></div></div>
     </div>
     <div id="envios"></div>
+    <button id="btn-camera" aria-label="Trocar câmera">📷 Câmera</button>
     <button id="btn-replay">REPLAY</button>
     <div id="aviso" class="hidden"></div>
     <div id="flash"></div>
+
+    <div id="seletor-cameras" class="hidden">
+      <div class="caixa">
+        <h2>Escolha a câmera</h2>
+        <p class="nota">Trocar de câmera reinicia o buffer (30s até o próximo replay completo).</p>
+        <div id="lista-cameras"></div>
+        <button id="btn-fechar-cameras">Cancelar</button>
+      </div>
+    </div>
   </section>
 
   <script src="app.js"></script>

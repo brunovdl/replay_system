@@ -48,8 +48,12 @@ como `botao`.
 1. Abra o domínio no **Chrome** → digite a senha → **Começar a filmar**.
 2. Permita a câmera. A página entra em tela cheia, deitada.
 3. Opcional: menu ⋮ → *Adicionar à tela inicial*, para abrir como app.
-4. Espere a barra do buffer ficar verde (30s) e toque em **REPLAY**.
-5. Acompanhe o envio no canto inferior esquerdo:
+4. Para trocar de câmera, toque em **📷 Câmera**. A lista mostra todas as
+   câmeras que o Chrome enxerga: traseiras (principal e grande-angular, se o
+   celular as expõe) e frontal. A escolha fica salva para a próxima vez.
+   Trocar de câmera reinicia o buffer.
+5. Espere a barra do buffer ficar verde (30s) e toque em **REPLAY**.
+6. Acompanhe o envio no canto inferior esquerdo:
    *enviando → gerando vídeo → ✔ Enviado para o WhatsApp*.
 
 ⚠️ **A página precisa ficar aberta e na frente.** Se trocar de app ou bloquear
