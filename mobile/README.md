@@ -28,7 +28,8 @@ O `Dockerfile` fica na **raiz** do repositório, como no antigo Replay 2.0.
    |---|---|
    | `REPLAY_TOKEN` | **nova**: uma senha forte, pedida na tela do celular |
    | `N8N_WEBHOOK_URL` | URL do webhook do n8n. A `WEBHOOK_URL` do serviço antigo também funciona |
-   | `KEEP_DAYS` | `7` (apaga replays antigos do servidor) |
+   | `KEEP_DAYS` | `7` (apaga replays antigos do servidor; `0` = nunca) |
+   | `MAX_STORAGE_GB` | `5` (acima disso apaga os mais antigos; `0` = sem limite) |
 
 3. **Volume** (aba *Mounts*): volume montado em **`/data`**. Sem ele, os
    replays e a telemetria somem a cada deploy.
@@ -55,6 +56,18 @@ como `botao`.
 5. Espere a barra do buffer ficar verde (30s) e toque em **REPLAY**.
 6. Acompanhe o envio no canto inferior esquerdo:
    *enviando → gerando vídeo → ✔ Enviado para o WhatsApp*.
+
+### 📁 Replays salvos
+
+Cada replay fica guardado no volume `/data` do servidor. Para ver, baixar ou
+apagar, abra **`https://<seu-domínio>/arquivos.html`** (ou toque em
+*📁 Ver e apagar replays salvos* na tela inicial). A senha é a mesma.
+
+- ▶ assiste, ⬇ baixa, 🗑 apaga. Dá para selecionar vários ou apagar todos.
+- Mostra o espaço usado, o limite e o espaço livre no servidor.
+- Itens com ⚠ são clipes que falharam na conversão (ficam para diagnóstico).
+- Limpeza automática: depois de `KEEP_DAYS` dias, ou quando passa de
+  `MAX_STORAGE_GB`, o servidor apaga os mais antigos sozinho.
 
 ⚠️ **A página precisa ficar aberta e na frente.** Se trocar de app ou bloquear
 a tela, a câmera pausa. A tela fica ligada sozinha (Wake Lock).
@@ -119,4 +132,5 @@ Ajustes no topo de `static/gesto.js` (`GESTO`): `HOLD_SECS` (tempo do hold),
 | `static/app.js` | captura, codificação H.264, buffer de 30s, troca de câmera, envio com novas tentativas |
 | `static/gesto.js` | gesto do braço levantado: MediaPipe Pose, regra e contagem do hold |
 | `static/index.html` | interface (tela inicial + filmagem) |
+| `static/arquivos.html` / `arquivos.js` | gestão dos replays salvos no servidor |
 | `../Dockerfile` | imagem com Python + ffmpeg, para o Easypanel (fica na raiz) |

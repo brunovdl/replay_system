@@ -55,6 +55,8 @@ BUFFER_JPEG_QUALITY = 85        # qualidade do JPEG no buffer (0-100)
                                 # (sem compressao seriam ~2,5 GB)
 REPLAY_SECONDS   = 30           # duração do buffer (segundos)
 OUTPUT_DIR       = "replays"    # pasta onde os vídeos serão salvos
+REPLAYS_KEEP_DAYS = 30          # apaga replays com mais de N dias (0 = nunca)
+REPLAYS_MAX_GB   = 10           # passando disso, apaga os mais antigos (0 = sem limite)
 DISPLAY_PREVIEW  = True         # mostrar janela de preview (False = headless)
 PREVIEW_WIDTH    = 1280         # largura maxima do preview em pixels (altura calculada automaticamente)
                                 # Aumente para ver mais detalhes | Diminua se a janela ficar grande demais
@@ -155,6 +157,45 @@ def obter_executavel_ffmpeg():
         return exe
 
     return "ffmpeg"
+
+
+def limpar_replays(mostrar_uso=False):
+    """Aplica REPLAYS_KEEP_DAYS e REPLAYS_MAX_GB na pasta de replays. Retorna (qtd, bytes) restantes."""
+    if not os.path.isdir(OUTPUT_DIR):
+        return 0, 0
+    videos = []
+    for nome in os.listdir(OUTPUT_DIR):
+        caminho = os.path.join(OUTPUT_DIR, nome)
+        if nome.startswith("replay") and nome.endswith(".mp4") and os.path.isfile(caminho):
+            st = os.stat(caminho)
+            videos.append((st.st_mtime, st.st_size, caminho))
+    videos.sort()   # mais antigo primeiro
+
+    agora = time.time()
+    total = sum(v[1] for v in videos)
+    restantes = []
+    for i, (criado, tamanho, caminho) in enumerate(videos):
+        antigo  = REPLAYS_KEEP_DAYS > 0 and criado < agora - REPLAYS_KEEP_DAYS * 86400
+        # Sempre mantem os 3 mais novos (o ultimo pode estar sendo enviado ao n8n)
+        excesso = REPLAYS_MAX_GB > 0 and total > REPLAYS_MAX_GB * 1024 ** 3 and i < len(videos) - 3
+        if antigo or excesso:
+            try:
+                os.remove(caminho)
+                total -= tamanho
+                log(f"🗑  Replay apagado ({'mais de ' + str(REPLAYS_KEEP_DAYS) + ' dias' if antigo else 'limite de espaco'}): {os.path.basename(caminho)}", YELLOW)
+                continue
+            except OSError:
+                pass
+        restantes.append(tamanho)
+    if mostrar_uso:
+        regras = []
+        if REPLAYS_KEEP_DAYS > 0:
+            regras.append(f"apaga apos {REPLAYS_KEEP_DAYS} dias")
+        if REPLAYS_MAX_GB > 0:
+            regras.append(f"limite {REPLAYS_MAX_GB:g} GB")
+        print(f"  Replays  : {len(restantes)} arquivo(s), {total / 1024 ** 2:.0f} MB"
+              + (f" ({', '.join(regras)})" if regras else ""))
+    return len(restantes), total
 
 
 
@@ -348,6 +389,10 @@ class ReplayBuffer:
             except Exception as e:
                 log(f"✗  Erro ao salvar: {e}", RED)
             finally:
+                try:
+                    limpar_replays()
+                except Exception as e_limpeza:
+                    log(f"✗  Erro ao limpar replays antigos: {e_limpeza}", RED)
                 self._process_lock.release()
                 with self._pending_lock:
                     self._pending -= 1
@@ -1153,6 +1198,7 @@ def main():
 {YELLOW}  Aguarde o buffer encher antes do primeiro replay.
   Pressione [Q] na janela ou Ctrl+C no terminal para sair.{RESET}
 """)
+    limpar_replays(mostrar_uso=True)
 
     buf = ReplayBuffer()
 

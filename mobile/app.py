@@ -11,11 +11,15 @@ Variaveis de ambiente:
   REPLAY_TOKEN     senha exigida pela pagina (vazio = sem senha, so para teste local)
   N8N_WEBHOOK_URL  webhook do n8n (vazio = so salva, nao envia). Aceita tambem WEBHOOK_URL
   DATA_DIR         onde guardar os replays (padrao: ./data)
-  KEEP_DAYS        apaga replays com mais de N dias (padrao: 7)
+  KEEP_DAYS        apaga replays com mais de N dias (padrao: 7; 0 = nunca)
+  MAX_STORAGE_GB   limite de espaco dos replays; acima dele apaga os mais antigos (padrao: 5; 0 = sem limite)
+
+Os arquivos podem ser vistos, baixados e apagados em /arquivos.html.
 """
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import threading
@@ -24,7 +28,7 @@ import uuid
 from datetime import datetime
 
 import requests
-from fastapi import BackgroundTasks, FastAPI, File, Form, Header, HTTPException, Request, UploadFile
+from fastapi import BackgroundTasks, Body, FastAPI, File, Form, Header, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -33,6 +37,7 @@ REPLAY_TOKEN    = os.environ.get("REPLAY_TOKEN", "")
 N8N_WEBHOOK_URL = os.environ.get("N8N_WEBHOOK_URL") or os.environ.get("WEBHOOK_URL", "")
 DATA_DIR        = os.environ.get("DATA_DIR", os.path.join(os.path.dirname(__file__), "data"))
 KEEP_DAYS       = float(os.environ.get("KEEP_DAYS", "7"))
+MAX_STORAGE_GB  = float(os.environ.get("MAX_STORAGE_GB", "5"))
 MAX_UPLOAD_MB   = 60      # 30s a ~2,5 Mbps ~= 10 MB; folga para bitrate alto
 STATIC_DIR      = os.path.join(os.path.dirname(__file__), "static")
 
@@ -62,15 +67,64 @@ def _checar_token(token):
         raise HTTPException(status_code=401, detail="Senha invalida")
 
 
-def _limpar_antigos():
-    limite = time.time() - KEEP_DAYS * 86400
+# So estes arquivos podem ser listados/baixados/apagados pela pagina de gestao
+# (o nome vem da URL: nada de "../", telemetria ou outros arquivos do volume)
+_NOME_VIDEO = re.compile(r"^(replay_zap_[\w-]+\.mp4|bruto_[\w-]+\.h264)$")
+
+
+def _videos():
+    """Videos do volume, do mais novo para o mais antigo."""
+    itens = []
     for nome in os.listdir(DATA_DIR):
         caminho = os.path.join(DATA_DIR, nome)
+        if not _NOME_VIDEO.match(nome) or not os.path.isfile(caminho):
+            continue
         try:
-            if os.path.isfile(caminho) and os.path.getmtime(caminho) < limite:
-                os.remove(caminho)
+            st = os.stat(caminho)
         except OSError:
-            pass
+            continue
+        itens.append({"nome": nome, "tipo": "replay" if nome.endswith(".mp4") else "falha",
+                      "tamanho": st.st_size, "criado": st.st_mtime})
+    itens.sort(key=lambda i: i["criado"], reverse=True)
+    return itens
+
+
+def _caminho_video(nome):
+    if not _NOME_VIDEO.match(nome):
+        raise HTTPException(status_code=400, detail="nome invalido")
+    caminho = os.path.join(DATA_DIR, nome)
+    if not os.path.isfile(caminho):
+        raise HTTPException(status_code=404, detail="arquivo nao encontrado")
+    return caminho
+
+
+def _apagar(nome, motivo):
+    try:
+        os.remove(os.path.join(DATA_DIR, nome))
+        _log(f"Apagado ({motivo}): {nome}")
+        return True
+    except OSError:
+        return False
+
+
+def _limpar_antigos():
+    """Apaga videos com mais de KEEP_DAYS dias e, passando de MAX_STORAGE_GB, os mais antigos."""
+    agora = time.time()
+    restantes = []
+    for v in _videos():
+        if KEEP_DAYS > 0 and v["criado"] < agora - KEEP_DAYS * 86400:
+            _apagar(v["nome"], "antigo")
+        else:
+            restantes.append(v)
+    if MAX_STORAGE_GB > 0:
+        total = sum(v["tamanho"] for v in restantes)
+        for v in reversed(restantes):          # do mais antigo para o mais novo
+            if total <= MAX_STORAGE_GB * 1024 ** 3:
+                break
+            if v["criado"] > agora - 300:      # recem-chegado: pode estar sendo convertido/enviado
+                continue
+            if _apagar(v["nome"], "limite de espaco"):
+                total -= v["tamanho"]
 
 
 def _processar(rid, bruto, meta):
@@ -134,6 +188,9 @@ def _processar(rid, bruto, meta):
             os.remove(final)
     finally:
         _limpar_antigos()
+
+
+_limpar_antigos()   # ao subir o container, sem esperar o proximo replay
 
 
 @app.get("/api/health")
@@ -214,6 +271,39 @@ async def telemetria(request: Request, x_replay_token: str = Header(default=""))
     with open(os.path.join(DATA_DIR, "telemetria.jsonl"), "a", encoding="utf-8") as f:
         f.write(json.dumps(linha, ensure_ascii=False) + "\n")
     return {"ok": True}
+
+
+@app.get("/api/arquivos")
+def listar_arquivos(x_replay_token: str = Header(default="")):
+    _checar_token(x_replay_token)
+    videos = _videos()
+    disco = shutil.disk_usage(DATA_DIR)
+    return {
+        "arquivos": videos,
+        "total": sum(v["tamanho"] for v in videos),
+        "disco_livre": disco.free,
+        "keep_days": KEEP_DAYS,
+        "max_storage_gb": MAX_STORAGE_GB,
+    }
+
+
+@app.get("/api/arquivos/{nome}")
+def baixar_arquivo(nome: str, x_replay_token: str = Header(default="")):
+    _checar_token(x_replay_token)
+    tipo = "video/mp4" if nome.endswith(".mp4") else "application/octet-stream"
+    return FileResponse(_caminho_video(nome), media_type=tipo, filename=nome)
+
+
+@app.post("/api/arquivos/apagar")
+def apagar_arquivos(dados: dict = Body(...), x_replay_token: str = Header(default="")):
+    """{"nomes": [...]} apaga esses videos; {"todos": true} apaga todos."""
+    _checar_token(x_replay_token)
+    if dados.get("todos"):
+        nomes = [v["nome"] for v in _videos()]
+    else:
+        nomes = [n for n in dados.get("nomes", []) if isinstance(n, str) and _NOME_VIDEO.match(n)]
+    apagados = sum(_apagar(n, "pela pagina") for n in nomes)
+    return {"ok": True, "apagados": apagados}
 
 
 @app.get("/")

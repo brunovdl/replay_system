@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <title>Replays salvos</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    :root {
+      --bg: #000;
+      --fg: #f2f2f2;
+      --muted: #9aa0a6;
+      --card: #151515;
+      --line: #2a2a2a;
+      --accent: #ff3b30;
+      --ok: #34c759;
+      --warn: #ffcc00;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; background: var(--bg); color: var(--fg);
+      font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .hidden { display: none !important; }
+    main { max-width: 720px; margin: 0 auto; padding: 16px; padding-bottom: 96px; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    h1 { margin: 0; font-size: 22px; }
+    a { color: var(--fg); }
+    button {
+      font: inherit; color: var(--fg); background: #222; border: 1px solid #333;
+      border-radius: 10px; padding: 9px 14px;
+    }
+    button:disabled { opacity: .45; }
+    button.perigo { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+
+    #login { display: flex; flex-direction: column; gap: 10px; align-items: stretch; max-width: 320px; margin: 40px auto; }
+    #login input {
+      padding: 14px; border-radius: 12px; border: 1px solid #333; background: #111;
+      color: var(--fg); font-size: 17px; text-align: center;
+    }
+    #erro { color: var(--accent); min-height: 1.4em; }
+
+    #resumo { background: var(--card); border-radius: 14px; padding: 14px 16px; margin-bottom: 12px; }
+    #resumo .linha { display: flex; justify-content: space-between; gap: 12px; }
+    #resumo b { font-variant-numeric: tabular-nums; }
+    #uso-trilho { height: 8px; border-radius: 4px; background: #333; overflow: hidden; margin: 10px 0 6px; }
+    #uso-nivel { height: 100%; width: 0; background: var(--ok); }
+    #resumo small { color: var(--muted); }
+
+    #acoes { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    #lista { display: flex; flex-direction: column; gap: 8px; }
+    .item {
+      display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center;
+      background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px;
+    }
+    .item.marcado { border-color: var(--accent); }
+    .item input { width: 22px; height: 22px; accent-color: var(--accent); }
+    .item .info { min-width: 0; }
+    .item .data { font-weight: 600; }
+    .item small { color: var(--muted); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .item .falha { color: var(--warn); }
+    .item .botoes { display: flex; gap: 6px; }
+    .item .botoes button { padding: 8px 10px; }
+    #vazio { color: var(--muted); text-align: center; padding: 32px 0; }
+
+    #player {
+      position: fixed; inset: 0; background: rgba(0, 0, 0, .92);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 16px;
+    }
+    #player video { max-width: 100%; max-height: 80vh; background: #000; border-radius: 8px; }
+
+    #barra-selecao {
+      position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px;
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
+      background: #111; border-top: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>📁 Replays salvos</h1>
+      <a href="./">← Filmar</a>
+    </header>
+
+    <section id="login" class="hidden">
+      <p>Digite a senha do replay para ver os arquivos.</p>
+      <input id="senha" type="password" placeholder="Senha" autocomplete="current-password">
+      <button id="btn-entrar">Entrar</button>
+    </section>
+    <div id="erro"></div>
+
+    <section id="painel" class="hidden">
+      <div id="resumo">
+        <div class="linha"><span>Usado pelos replays</span><b id="r-total">—</b></div>
+        <div id="uso-trilho"><div id="uso-nivel"></div></div>
+        <small id="r-regras"></small>
+      </div>
+
+      <div id="acoes">
+        <button id="btn-atualizar">↻ Atualizar</button>
+        <button id="btn-marcar">Selecionar todos</button>
+        <button id="btn-falhas">Selecionar falhas</button>
+        <button id="btn-todos" class="perigo">Apagar todos</button>
+      </div>
+
+      <div id="lista"></div>
+      <div id="vazio" class="hidden">Nenhum replay salvo no servidor.</div>
+    </section>
+  </main>
+
+  <div id="barra-selecao" class="hidden">
+    <span><b id="n-sel">0</b> selecionado(s) · <span id="t-sel">0 MB</span></span>
+    <button id="btn-apagar-sel" class="perigo">Apagar</button>
+  </div>
+
+  <div id="player" class="hidden">
+    <video id="video" controls playsinline></video>
+    <button id="btn-fechar">Fechar</button>
+  </div>
+
+  <script src="arquivos.js"></script>
+</body>
+</html>

@@ -59,6 +59,11 @@ O replay vai para `replays/replay_zap_AAAAMMDD_HHMMSS.mp4` (H.264 + AAC,
 compatível com WhatsApp) e é enviado ao n8n com os campos `file`, `duracao` e
 `evento`.
 
+A pasta `replays/` se limpa sozinha: apaga os replays com mais de
+`REPLAYS_KEEP_DAYS` dias e, se passar de `REPLAYS_MAX_GB`, os mais antigos
+(os 3 mais novos nunca são apagados). O uso aparece ao iniciar. Para apagar
+na mão, basta apagar os arquivos da pasta.
+
 ### Configurações (topo do `replay_cam.py`)
 
 | Variável | Padrão | Descrição |
@@ -66,6 +71,8 @@ compatível com WhatsApp) e é enviado ao n8n com os campos `file`, `duracao` e
 | `CAMERA_WIDTH` / `CAMERA_HEIGHT` | 1280x720 | resolução pedida à câmera local |
 | `BUFFER_JPEG_QUALITY` | 85 | compressão do buffer (~150 MB de RAM para 30s em 720p) |
 | `REPLAY_SECONDS` | 30 | duração do replay |
+| `REPLAYS_KEEP_DAYS` | 30 | apaga replays mais velhos que isso (0 = nunca) |
+| `REPLAYS_MAX_GB` | 10 | limite da pasta `replays/` (0 = sem limite) |
 | `GESTURE_HOLD_SECS` | 4.0 | tempo com o braço levantado para disparar |
 | `GESTURE_GRACE_SECS` | 1.0 | tolerância a falhas de detecção durante o hold |
 | `GESTURE_SOUND` | True | bipes no PC (para quem está longe da tela) |
