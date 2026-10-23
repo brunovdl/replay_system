@@ -312,4 +312,14 @@ def index():
     return FileResponse(os.path.join(STATIC_DIR, "index.html"), headers={"Cache-Control": "no-cache"})
 
 
-app.mount("/", StaticFiles(directory=STATIC_DIR), name="static")
+class StaticSemCache(StaticFiles):
+    """no-cache tambem no JS/CSS: sem isso o Chrome guarda o app.js/gesto.js antigos
+    e roda com o index.html novo (botoes sem funcao). Revalida via ETag (304, barato)."""
+
+    def file_response(self, *args, **kwargs):
+        resp = super().file_response(*args, **kwargs)
+        resp.headers["Cache-Control"] = "no-cache"
+        return resp
+
+
+app.mount("/", StaticSemCache(directory=STATIC_DIR), name="static")
