@@ -80,13 +80,14 @@
       background: rgba(0, 0, 0, .8); padding: 18px 26px; border-radius: 14px;
       font-size: 22px; font-weight: 700; text-align: center; pointer-events: none;
     }
-    #btn-camera, #btn-gesto {
+    #btn-camera, #btn-gesto, #btn-tempo {
       position: absolute; right: max(20px, env(safe-area-inset-right)); bottom: 168px;
       padding: 10px 16px; border-radius: 22px; border: 1px solid rgba(255, 255, 255, .35);
       background: var(--panel); color: var(--fg); font-size: 15px; font-weight: 600;
     }
     #btn-gesto { bottom: 220px; }
     #btn-gesto.desligado { opacity: .55; text-decoration: line-through; }
+    #btn-tempo { bottom: 272px; }
 
     /* Contagem do hold: grande o bastante para ser vista de longe */
     #contagem {
@@ -153,6 +154,7 @@
       <div id="contagem-texto">Segure o braço levantado…</div>
       <div id="contagem-trilho"><div id="contagem-nivel"></div></div>
     </div>
+    <button id="btn-tempo" aria-label="Tempo do braço levantado">⏱ Braço: 3s</button>
     <button id="btn-gesto">🙋 Gesto: ON</button>
     <button id="btn-camera" aria-label="Trocar câmera">📷 Câmera</button>
     <button id="btn-replay">REPLAY</button>

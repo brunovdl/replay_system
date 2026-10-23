@@ -555,6 +555,21 @@ function alternarGesto() {
   atualizarBotaoGesto();
 }
 
+/** Passa para o próximo tempo de hold (1→2→…→5→1s) e salva no celular. */
+function alternarTempoGesto() {
+  const opcoes = GESTO.HOLD_OPCOES;
+  GESTO.HOLD_SECS = opcoes[(opcoes.indexOf(GESTO.HOLD_SECS) + 1) % opcoes.length];
+  const m = estado.gesto.maquina;
+  if (m) m.inicioHold = 0;   // um hold em andamento recomeça com o tempo novo
+  try { localStorage.setItem("replay_gesto_secs", String(GESTO.HOLD_SECS)); } catch {}
+  atualizarBotaoTempo();
+  aviso(`Braço levantado por ${GESTO.HOLD_SECS}s para gravar`, 1500);
+}
+
+function atualizarBotaoTempo() {
+  $("btn-tempo").textContent = `⏱ Braço: ${GESTO.HOLD_SECS}s`;
+}
+
 function atualizarBotaoGesto() {
   const btn = $("btn-gesto");
   btn.textContent = `🙋 Gesto: ${estado.gesto.ligado ? "ON" : "OFF"}`;
@@ -670,6 +685,12 @@ $("btn-camera").addEventListener("click", abrirSeletorCameras);
 $("btn-gesto").addEventListener("click", alternarGesto);
 try { estado.gesto.ligado = localStorage.getItem("replay_gesto") !== "0"; } catch {}
 atualizarBotaoGesto();
+$("btn-tempo").addEventListener("click", alternarTempoGesto);
+try {
+  const secs = Number(localStorage.getItem("replay_gesto_secs"));
+  if (GESTO.HOLD_OPCOES.includes(secs)) GESTO.HOLD_SECS = secs;
+} catch {}
+atualizarBotaoTempo();
 $("btn-fechar-cameras").addEventListener("click", fecharSeletorCameras);
 $("senha").addEventListener("keydown", (e) => e.key === "Enter" && comecar());
 try { $("senha").value = localStorage.getItem("replay_token") || ""; } catch {}

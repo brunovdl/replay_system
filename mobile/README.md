@@ -93,7 +93,7 @@ como o celular se comportou ao longo da partida.
 
 ### Gatilho por gesto
 
-Qualquer jogador que **mantenha o braço levantado por 3s** dispara o replay.
+Qualquer jogador que **mantenha o braço levantado por 3s** (ajustável na tela) dispara o replay.
 O braço conta como levantado quando o pulso (ou o cotovelo) fica acima da
 cabeça. Com o jogador de costas, vale o pulso bem acima do ombro.
 
@@ -104,10 +104,14 @@ cabeça. Com o jogador de costas, vale o pulso bem acima do ombro.
 - A detecção roda **no celular** (MediaPipe Pose, na GPU), 5 vezes por
   segundo. Na primeira vez, o celular baixa ~18 MB, que depois ficam no cache.
 - **🙋 Gesto: ON/OFF** liga e desliga o gesto. O botão REPLAY sempre funciona.
+- **⏱ Braço: 3s** escolhe por quanto tempo o braço precisa ficar levantado:
+  cada toque passa para o próximo valor (1 → 2 → 3 → 4 → 5s). A escolha fica
+  salva no celular.
 - A barra do topo mostra quantas pessoas o detector está vendo. Se ficar em
   0 com gente na quadra, a câmera está longe ou baixa demais.
 
-Ajustes no topo de `static/gesto.js` (`GESTO`): `HOLD_SECS` (tempo do hold),
+Ajustes no topo de `static/gesto.js` (`GESTO`): `HOLD_SECS` (tempo padrão do hold),
+`HOLD_OPCOES` (valores do botão ⏱),
 `GRACE_SECS`, `COOLDOWN_SECS`, `FPS`, `VISIBILIDADE`.
 
 ### Ajustes rápidos (topo de `static/app.js`, em `CFG`)

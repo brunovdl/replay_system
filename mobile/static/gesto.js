@@ -8,7 +8,8 @@
 "use strict";
 
 const GESTO = {
-  HOLD_SECS: 3,          // tempo com o braço levantado para disparar (PC usa 4s)
+  HOLD_SECS: 3,          // tempo com o braço levantado para disparar (PC usa 4s); muda pelo botão ⏱
+  HOLD_OPCOES: [1, 2, 3, 4, 5],   // valores que o botão ⏱ percorre
   GRACE_SECS: 1,         // falhas momentâneas de detecção não cancelam o hold
   COOLDOWN_SECS: 5,      // depois de disparar, espera isso antes de aceitar outro gesto
   FPS: 5,                // detecções por segundo (economiza bateria e evita aquecer)
